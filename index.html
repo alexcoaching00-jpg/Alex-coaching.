@@ -700,10 +700,14 @@ document.addEventListener("click",e=>{
     case "invite": inviteClient(); break;
     case "role": S.role=t.dataset.role; if(S.role==="client"&&!S.selectedId&&S.clients[0]) S.selectedId=S.clients[0].id; render(); break;
     case "nav": S.view=t.dataset.view; render(); break;
-    case "nav-client": S.clientTab=t.dataset.ctab; render(); break;
+    case "nav-client": S.clientTab=t.dataset.ctab;
+      if(t.dataset.ctab==="messages"){ loadClients().then(()=>render()); } else { render(); }
+      break;
     case "open": S.selectedId=t.dataset.id; S.view="detail"; S.detailTab="infos"; S.confirmDel=false; render(); break;
     case "back": S.view="clients"; render(); break;
-    case "dtab": S.detailTab=t.dataset.dtab; S.confirmDel=false; render(); break;
+    case "dtab": S.detailTab=t.dataset.dtab; S.confirmDel=false;
+      if(t.dataset.dtab==="messages"){ loadClients().then(()=>render()); } else { render(); }
+      break;
     case "add-open": S.showAdd=true; render(); break;
     case "modal-close": S.showAdd=false; render(); break;
     case "modal-bg": if(!e.target.closest("[data-stop]")){ S.showAdd=false; render(); } break;
@@ -727,8 +731,12 @@ document.addEventListener("click",e=>{
       const role=t.dataset.role||"coach";
       c.messages=c.messages||[];
       c.messages.push({from:role,text:txt,date:new Date().toISOString(),lu:role==="coach"});
-      save(); render();
-      // Scroll to bottom
+      // Sauvegarde immédiate (pas de debounce pour les messages)
+      sb.from("clients").update(clientToRow(c)).eq("id",c.id).then(({error})=>{
+        if(error) toast("Erreur envoi");
+        else toast("Message envoyé");
+      });
+      render();
       setTimeout(()=>{const ml=document.getElementById("msg-list");if(ml)ml.scrollTop=ml.scrollHeight;},50);
       break; }
     case "del-photo": if(c){ c.photos=(c.photos||[]).filter((_,i)=>i!==+t.dataset.idx); save(); render(); } break;
