@@ -17,16 +17,27 @@
 -->
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <style>
-  :root{--ink:#0F0F0F;--ink2:#1C1C1C;--base:#141414;--card:#1E1E1E;--red:#B01F1F;--red2:#7E1712;--grey:#9E9E9E;--grey2:#616161;--line:#2A2A2A;--danger:#E53935;--white:#F0EEEC;--white2:#BDBDBD;}
+  :root{--ink:#0D0B0A;--ink2:#1D1714;--base:#12100E;--card:#1C1613;--red:#B01F1F;--red2:#7E1712;--grey:#A39588;--grey2:#6B5F55;--line:#2E2620;--danger:#E53935;--white:#F2EDE7;--white2:#C9BCAF;}
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
-  html,body{background:var(--base);color:var(--white);font-family:'Inter',system-ui,sans-serif;min-height:100vh}
+  html{background:var(--base)}
+  body{color:var(--white);font-family:'Inter',system-ui,sans-serif;min-height:100vh;
+    background:
+      radial-gradient(1100px 750px at 12% -8%, rgba(176,31,31,.12), transparent 55%),
+      radial-gradient(900px 650px at 96% 108%, rgba(184,134,47,.08), transparent 55%),
+      radial-gradient(700px 500px at 55% 45%, rgba(126,23,18,.05), transparent 60%),
+      var(--base);
+    background-attachment:fixed}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.45;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+    background-size:140px 140px}
+  .wrap,.center{position:relative;z-index:1}
   h1,h2,h3,.disp{font-family:'Bebas Neue',system-ui,sans-serif;letter-spacing:.04em}
   button{font-family:inherit}50%{transform:scale(1.05);filter:brightness(1.15)}}50%{opacity:1}}
   @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
   @media (prefers-reduced-motion:reduce){main{animation:none}}
   .wrap{max-width:520px;margin:0 auto;padding-bottom:92px}
   main{padding:16px 16px 0;animation:fade .3s ease both}
-  .hd{background:var(--ink);border-bottom:1px solid var(--line);padding:14px 18px 16px}
+  .hd{background:linear-gradient(180deg,#12100E,#0D0B0A);border-bottom:2px solid rgba(176,31,31,.4);padding:14px 18px 16px}
   .hd-top{display:flex;align-items:center;justify-content:space-between}
   .logo{display:flex;align-items:center;gap:10px}
   .logo .mark{width:32px;height:32px;border-radius:8px;background:var(--red);display:grid;place-items:center;font-family:'Bebas Neue';font-size:18px;color:#fff;letter-spacing:.04em}
@@ -38,7 +49,7 @@
   .pick label{color:var(--grey2);font-size:12px}
   .pick select{display:block;margin-top:4px;background:var(--ink2);color:var(--white);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:15px;font-family:'Inter';font-weight:600;width:100%}
   .row-stats{display:flex;gap:12px;margin-bottom:16px}
-  .stat{flex:1;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px 16px}
+  .stat{flex:1;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px 16px;box-shadow:0 4px 14px rgba(0,0,0,.35)}
   .stat .v{font-family:'Bebas Neue';font-size:36px;color:var(--red);line-height:1;letter-spacing:.04em}
   .stat .l{font-size:11px;color:var(--grey);margin-top:4px;font-weight:600;text-transform:uppercase;letter-spacing:.06em}
   .tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
@@ -49,7 +60,7 @@
   .sec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
   .sec-head h2{font-family:'Bebas Neue';font-size:20px;letter-spacing:.06em;color:var(--white)}
   .link{border:none;background:transparent;color:var(--red);font-weight:700;font-size:14px;cursor:pointer}
-  .crow{width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;margin-bottom:10px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:border-color .15s}
+  .crow{width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;margin-bottom:10px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:border-color .15s;box-shadow:0 4px 14px rgba(0,0,0,.35)}
   .crow:hover{border-color:var(--red)}
   .avatar{width:44px;height:44px;border-radius:12px;background:rgba(193,18,31,.15);display:grid;place-items:center;font-family:'Bebas Neue';font-size:20px;color:var(--red);flex-shrink:0}
   .crow .nm{font-weight:700;font-size:15px;color:var(--white)}
@@ -60,7 +71,7 @@
   .empty p{color:var(--grey);font-size:14px;margin-bottom:16px}
   .btn{border:none;border-radius:14px;padding:12px 18px;font-weight:700;font-size:15px;cursor:pointer;font-family:'Inter';transition:filter .15s,transform .1s}
   .btn:active{transform:scale(.97)}
-  .btn.p{background:var(--red);color:#fff}
+  .btn.p{background:linear-gradient(180deg,#C22525,#8E1815);color:#fff;box-shadow:0 4px 14px rgba(176,31,31,.35)}
   .btn.p:hover{filter:brightness(1.1)}
   .btn.d{background:var(--ink2);color:var(--white);border:1px solid var(--line)}
   .btn.g{background:transparent;color:var(--white2);border:1px solid var(--line)}
@@ -82,7 +93,7 @@
   .fld textarea{resize:vertical}
   .panel{background:var(--ink2);border:1px solid var(--line);border-radius:16px;padding:14px}
   .panel .ph{font-family:'Bebas Neue';font-size:17px;letter-spacing:.05em;margin-bottom:10px;color:var(--white)}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:13px;margin-bottom:10px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:13px;margin-bottom:10px;box-shadow:0 4px 14px rgba(0,0,0,.35)}
   .exi{font-family:'Bebas Neue';font-size:14px;color:var(--red);letter-spacing:.06em}
   .exn{font-weight:700;font-size:15px;color:var(--white)}
   .exd{font-size:13px;color:var(--grey);margin-top:4px}
@@ -98,7 +109,7 @@
   .cbanner{background:linear-gradient(135deg,var(--red2),var(--red));color:#fff;border-radius:18px;padding:18px;margin-bottom:16px}
   .cbanner .lab{font-size:11px;color:rgba(255,255,255,.7);font-weight:700;text-transform:uppercase;letter-spacing:.08em}
   .cbanner .obj{font-family:'Bebas Neue';font-size:20px;margin-top:4px;letter-spacing:.04em}
-  .chartbox{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 12px;margin-bottom:14px}
+  .chartbox{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 12px;margin-bottom:14px;box-shadow:0 4px 14px rgba(0,0,0,.35)}
   .chart-empty{border-radius:14px;padding:20px;text-align:center;background:var(--ink2);color:var(--grey);border:1px dashed var(--line);font-size:14px}
   nav{position:fixed;bottom:0;left:0;right:0;max-width:520px;margin:0 auto;background:var(--ink);border-top:1px solid var(--line);display:flex;padding:8px 8px calc(8px + env(safe-area-inset-bottom))}
   nav button{flex:1;border:none;background:transparent;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 0;color:var(--grey2);font-family:'Inter';font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.04em;transition:color .15s}
@@ -121,6 +132,13 @@
   .sql{white-space:pre-wrap;background:#0A0A0A;color:#666;padding:12px;border-radius:10px;font-size:11px;line-height:1.45;overflow:auto;margin-top:8px;font-family:ui-monospace,Menlo,monospace}
   details summary{cursor:pointer;font-size:13.5px;color:var(--red);font-weight:700}
 
+  /* bilan progression */
+  .pstats{display:flex;gap:10px;margin-bottom:12px}
+  .pstat{flex:1;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,.3)}
+  .pstat .pv{font-family:'Bebas Neue';font-size:22px;letter-spacing:.03em;color:var(--white)}
+  .pstat .pl{font-size:10px;color:var(--grey2);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-top:2px}
+  .pstat.delta .pv{color:#4CAF50}.pstat.delta.up .pv{color:var(--amber)}
+  .pstat.target .pv{color:var(--red)}
   /* splash */
   #splash{position:fixed;inset:0;background:#0D0B0A;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;transition:opacity .5s ease}
   #splash.out{opacity:0;pointer-events:none}
@@ -405,19 +423,40 @@ function sampleObj(){return{nom:"Madeleine D.",objectif:"Retrouver de l'autonomi
   mesures:[{date:"2026-01-15",poids:72.0,note:"Bilan initial"},{date:"2026-02-15",poids:71.4,note:""},{date:"2026-03-15",poids:70.8,note:"TUG en progrès"}],
   seances:[{date:"2026-03-10",fait:true,ressenti:"Bien",note:""},{date:"2026-03-12",fait:true,ressenti:"Fatiguée",note:"Lombaires ok"}]};}
 
-function chart(mesures){
+function chart(mesures,target){
   const pts=(mesures||[]).filter(m=>typeof m.poids==="number");
   if(pts.length<2) return `<div class="chart-empty">Ajoutez au moins deux mesures pour voir la courbe de progression.</div>`;
-  const W=440,H=180,pad={l:34,r:14,t:14,b:24};
-  const ys=pts.map(m=>m.poids),minY=Math.min(...ys)-1,maxY=Math.max(...ys)+1;
+  const W=440,H=190,pad={l:36,r:14,t:16,b:26};
+  const ys=pts.map(m=>m.poids);
+  let minY=Math.min(...ys), maxY=Math.max(...ys);
+  if(typeof target==="number"){ minY=Math.min(minY,target); maxY=Math.max(maxY,target); }
+  minY-=1; maxY+=1;
   const px=i=>pad.l+(i/(pts.length-1))*(W-pad.l-pad.r);
   const py=v=>pad.t+(1-(v-minY)/(maxY-minY||1))*(H-pad.t-pad.b);
-  const line=pts.map((m,i)=>`${px(i).toFixed(1)},${py(m.poids).toFixed(1)}`).join(" ");
-  const dots=pts.map((m,i)=>`<circle cx="${px(i).toFixed(1)}" cy="${py(m.poids).toFixed(1)}" r="4" fill="#B01F1F"/>`).join("");
-  const xlab=pts.map((m,i)=>`<text x="${px(i).toFixed(1)}" y="${H-6}" font-size="10" fill="#6B7770" text-anchor="middle">${frDate(m.date)}</text>`).join("");
+  const linePts=pts.map((m,i)=>`${px(i).toFixed(1)},${py(m.poids).toFixed(1)}`);
+  const line=linePts.join(" ");
+  const areaPath=`M ${px(0).toFixed(1)},${(H-pad.b).toFixed(1)} L ${linePts.join(" L ")} L ${px(pts.length-1).toFixed(1)},${(H-pad.b).toFixed(1)} Z`;
+  const dots=pts.map((m,i)=>`<circle cx="${px(i).toFixed(1)}" cy="${py(m.poids).toFixed(1)}" r="4.5" fill="#B01F1F" stroke="#F2EDE7" stroke-width="1.5"/>`).join("");
+  const lastIdx=pts.length-1;
+  const lastLabel=`<text x="${px(lastIdx).toFixed(1)}" y="${(py(pts[lastIdx].poids)-10).toFixed(1)}" font-size="12" font-weight="700" fill="#F2EDE7" text-anchor="middle">${pts[lastIdx].poids} kg</text>`;
+  const xlab=pts.map((m,i)=>`<text x="${px(i).toFixed(1)}" y="${H-8}" font-size="10" fill="#6B5F55" text-anchor="middle">${frDate(m.date)}</text>`).join("");
   const grid=[0,.5,1].map(t=>{const y=pad.t+t*(H-pad.t-pad.b),v=(maxY-t*(maxY-minY)).toFixed(1);
-    return `<line x1="${pad.l}" y1="${y}" x2="${W-pad.r}" y2="${y}" stroke="#DBE0D6" stroke-dasharray="3 3"/><text x="4" y="${y+3}" font-size="9" fill="#6B7770">${v}</text>`;}).join("");
-  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Courbe de poids">${grid}<polyline points="${line}" fill="none" stroke="#B01F1F" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>${dots}${xlab}</svg>`;
+    return `<line x1="${pad.l}" y1="${y}" x2="${W-pad.r}" y2="${y}" stroke="#2E2620" stroke-dasharray="3 3"/><text x="4" y="${y+3}" font-size="9" fill="#6B5F55">${v}</text>`;}).join("");
+  let targetLine="";
+  if(typeof target==="number"){
+    const ty=py(target).toFixed(1);
+    targetLine=`<line x1="${pad.l}" y1="${ty}" x2="${W-pad.r}" y2="${ty}" stroke="#B8862F" stroke-width="1.5" stroke-dasharray="6 4"/><text x="${W-pad.r}" y="${(+ty-5).toFixed(1)}" font-size="10" font-weight="700" fill="#B8862F" text-anchor="end">Objectif ${target} kg</text>`;
+  }
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Courbe de poids">
+    <defs><linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#B01F1F" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#B01F1F" stop-opacity="0.02"/>
+    </linearGradient></defs>
+    ${grid}
+    <path d="${areaPath}" fill="url(#areaGrad)"/>
+    ${targetLine}
+    <polyline points="${line}" fill="none" stroke="#B01F1F" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+    ${dots}${lastLabel}${xlab}</svg>`;
 }
 
 function authScreen(){
@@ -684,7 +723,18 @@ function progres(c,editable){
   const rows=ms.map((m,i)=>({m,i})).reverse().map(({m,i})=>`
     <div class="mrow"><div><span class="mv">${m.poids} kg</span><span class="md">${frDate(m.date)}</span>${m.taille||m.hanches?`<div class="md" style="margin-left:0">${m.taille?`Taille ${m.taille} cm`:''}${m.taille&&m.hanches?' · ':''}${m.hanches?`Hanches ${m.hanches} cm`:''}</div>`:""}${m.note?`<div class="md" style="margin-left:0">${esc(m.note)}</div>`:""}</div>
     ${editable?`<button class="x" data-act="del-me" data-idx="${i}">×</button>`:""}</div>`).join("");
-  return `<div class="chartbox">${chart(ms)}</div>${form}${rows}`;
+  const chips=(()=>{
+    if(!ms.length) return '';
+    const start=ms[0].poids, cur=ms[ms.length-1].poids;
+    const delta=+(cur-start).toFixed(1);
+    const target=c.objectifPoids;
+    return `<div class="pstats">
+      <div class="pstat"><div class="pv">${start} kg</div><div class="pl">Départ</div></div>
+      <div class="pstat delta ${delta>0?'up':''}"><div class="pv">${delta>0?'+':''}${delta} kg</div><div class="pl">Évolution</div></div>
+      <div class="pstat"><div class="pv">${cur} kg</div><div class="pl">Actuel</div></div>
+      ${target?`<div class="pstat target"><div class="pv">${target} kg</div><div class="pl">Objectif</div></div>`:''}
+    </div>`;})();
+  return chips+`<div class="chartbox">${chart(ms,c.objectifPoids||undefined)}</div>${form}${rows}`;
 }
 function seancesTab(c,editable){
   const ss=c.seances||[];
