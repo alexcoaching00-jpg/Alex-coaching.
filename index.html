@@ -324,8 +324,8 @@ const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;"
 const val=id=>{const e=document.getElementById(id);return e?e.value:"";};
 const sel=()=>S.clients.find(c=>c.id===S.selectedId)||null;
 
-const rowToClient=r=>({id:r.id,nom:r.nom,objectif:r.objectif||"",formule:r.formule||FORMULES[0],niveau:r.niveau||NIVEAUX[0],notes:r.notes||"",clientEmail:r.client_email||"",dateDebut:r.date_debut||"",objectifPoids:r.objectif_poids||null,program:r.program||[],mesures:r.mesures||[],seances:r.seances||[],messages:r.messages||[],photos:r.photos||[]});
-const clientToRow=c=>({nom:c.nom,objectif:c.objectif||null,formule:c.formule||null,niveau:c.niveau||null,notes:c.notes||null,client_email:(c.clientEmail||"").trim().toLowerCase()||null,date_debut:c.dateDebut||null,objectif_poids:c.objectifPoids||null,program:c.program||[],mesures:c.mesures||[],seances:c.seances||[],messages:c.messages||[],photos:c.photos||[],updated_at:new Date().toISOString()});
+const rowToClient=r=>({id:r.id,nom:r.nom,objectif:r.objectif||"",formule:r.formule||FORMULES[0],niveau:r.niveau||NIVEAUX[0],notes:r.notes||"",clientEmail:r.client_email||"",dateDebut:r.date_debut||"",objectifPoids:r.objectif_poids||null,forfaitTotal:r.forfait_total||null,prochainRdv:r.prochain_rdv||"",program:r.program||[],mesures:r.mesures||[],seances:r.seances||[],messages:r.messages||[],photos:r.photos||[]});
+const clientToRow=c=>({nom:c.nom,objectif:c.objectif||null,formule:c.formule||null,niveau:c.niveau||null,notes:c.notes||null,client_email:(c.clientEmail||"").trim().toLowerCase()||null,date_debut:c.dateDebut||null,objectif_poids:c.objectifPoids||null,forfait_total:c.forfaitTotal||null,prochain_rdv:c.prochainRdv||null,program:c.program||[],mesures:c.mesures||[],seances:c.seances||[],messages:c.messages||[],photos:c.photos||[],updated_at:new Date().toISOString()});
 
 let toastT=null;
 function toast(msg){const t=document.getElementById("toast");if(!t)return;t.textContent=msg;t.style.display="block";clearTimeout(toastT);toastT=setTimeout(()=>t.style.display="none",1200);}
@@ -473,6 +473,19 @@ function dashboard(){
       <div class="stat"><div class="v" style="color:${totalMsgs>0?'var(--red)':'var(--grey)'}">${totalMsgs}</div><div class="l">Messages</div></div>
     </div>
     ${byF.length?`<div class="tags">${byF.map(x=>`<span class="tag ${x.f==='Petit groupe'?'am':'em'}">${x.f} · ${x.n}</span>`).join("")}</div>`:""}
+    ${(()=>{
+      const rdvs=cs.filter(c=>c.prochainRdv).map(c=>({c,d:new Date(c.prochainRdv)})).filter(x=>x.d>=new Date(Date.now()-3600*1000)).sort((a,b)=>a.d-b.d).slice(0,4);
+      if(!rdvs.length) return '';
+      return `<div class="panel" style="margin-bottom:14px"><div class="ph" style="font-size:14px">Prochains RDV</div>
+        ${rdvs.map(({c,d})=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line);font-size:13.5px">
+          <span style="color:var(--white)">${esc(c.nom)}</span>
+          <span style="color:var(--red);font-weight:700">${d.toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'})} · ${d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</span>
+        </div>`).join("")}</div>`;})()}
+    ${(()=>{
+      const finForfait=cs.filter(c=>{const r=forfaitRestant(c);return r!==null&&r<=2;});
+      if(!finForfait.length) return '';
+      return `<div class="panel" style="margin-bottom:14px;border-color:rgba(193,18,31,.35)"><div class="ph" style="color:var(--red);font-size:14px">Forfaits à renouveler</div>
+        ${finForfait.map(c=>`<span class="badge-warn" style="margin-right:6px;background:rgba(193,18,31,.15);color:#FF6B6B">${esc(c.nom)} · ${forfaitRestant(c)} restante${forfaitRestant(c)>1?'s':''}</span>`).join("")}</div>`;})()}
     ${inactifs.length?`<div class="panel" style="margin-bottom:14px;border-color:rgba(240,180,41,.3)">
       <div class="ph" style="color:#F0B429;font-size:14px">⚠ ${inactifs.length} client${inactifs.length>1?'s':''} inactif${inactifs.length>1?'s':''} (+14 jours)</div>
       ${inactifs.map(c=>`<span class="badge-warn" style="margin-right:6px;margin-top:4px">${esc(c.nom)}</span>`).join("")}
@@ -498,7 +511,10 @@ function clientRow(c){
   return `<button class="crow" data-act="open" data-id="${c.id}">
     <div class="avatar">${esc(c.nom.slice(0,1))}</div>
     <div style="flex:1;min-width:0"><div class="nm">${esc(c.nom)} ${invited?'<span title="Accès client activé" style="color:var(--emeraldDeep);font-size:12px">●</span>':''}</div><div class="ob">${esc(c.objectif||"—")}</div></div>
-    ${trend!==null?`<span class="trend" style="color:${trend<=0?'var(--emeraldDeep)':'var(--amber)'}">${trend>0?'+':''}${trend} kg</span>`:""}</button>`;
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px">
+      ${trend!==null?`<span class="trend" style="color:${trend<=0?'#4CAF50':'var(--amber)'}">${trend>0?'+':''}${trend} kg</span>`:""}
+      ${(()=>{const r=forfaitRestant(c);return r!==null?`<span style="font-size:11px;color:${r<=2?'var(--red)':'var(--grey2)'};font-weight:700">${r} séance${r>1?'s':''}</span>`:'';})()}
+    </div></button>`;
 }
 function emptyClients(){
   return `<div class="empty"><div class="t">Aucun client pour l'instant</div>
@@ -523,7 +539,15 @@ function infosTab(c){
     <label class="fld"><span>Objectif</span><input data-bind="objectif" value="${esc(c.objectif)}" placeholder="Ex. Retrouver de l'autonomie"></label>
     <div class="r2"><label class="fld"><span>Formule</span><select data-bind="formule">${opt(FORMULES,c.formule)}</select></label>
     <label class="fld"><span>Niveau</span><select data-bind="niveau">${opt(NIVEAUX,c.niveau)}</select></label></div>
-    <label class="fld"><span>Date de début</span><input type="date" data-bind="dateDebut" value="${esc(c.dateDebut||"")}"></label>
+    <div class="r2">
+      <label class="fld"><span>Date de début</span><input type="date" data-bind="dateDebut" value="${esc(c.dateDebut||"")}"></label>
+      <label class="fld"><span>Prochain RDV</span><input type="datetime-local" data-bind="prochainRdv" value="${esc(c.prochainRdv||"")}"></label>
+    </div>
+    <label class="fld"><span>Forfait (nombre de séances achetées)</span><input type="number" min="0" data-bind-num="forfaitTotal" value="${c.forfaitTotal||''}" placeholder="Ex. 10"></label>
+    ${(()=>{const r=forfaitRestant(c);if(r===null)return'';
+      const done=(c.seances||[]).filter(s=>s.fait).length;
+      const pct=c.forfaitTotal>0?Math.round(done/c.forfaitTotal*100):0;
+      return `<div style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--grey)"><span>Forfait utilisé</span><span>${done}/${c.forfaitTotal} séances</span></div><div class="obj-bar"><div class="obj-fill" style="width:${Math.min(100,pct)}%"></div></div>${r<=2?`<div class="badge-warn" style="margin-top:6px">⚠ Plus que ${r} séance${r>1?'s':''} — pensez au renouvellement</div>`:''}</div>`;})()}
     <label class="fld"><span>Notes (santé, contraintes, remarques)</span><textarea data-bind="notes" rows="3">${esc(c.notes||"")}</textarea></label>
     <div class="panel" style="margin-bottom:14px">
       <div class="ph">Accès client</div>
@@ -569,11 +593,13 @@ function progres(c,editable){
   const ms=c.mesures||[];
   const form=editable?`
     <div class="panel" style="margin-bottom:14px"><div class="ph">Nouvelle mesure — ${frDate(today())}</div>
-      <div class="r2"><label class="fld" style="flex:1"><span>Poids (kg)</span><input id="me-poids" inputmode="decimal" placeholder="70.5"></label>
-      <label class="fld" style="flex:2"><span>Note</span><input id="me-note" placeholder="Ressenti, tour de taille…"></label></div>
+      <div class="r2"><label class="fld"><span>Poids (kg)</span><input id="me-poids" inputmode="decimal" placeholder="70.5"></label>
+      <label class="fld"><span>Taille (cm)</span><input id="me-taille" inputmode="decimal" placeholder="82"></label>
+      <label class="fld"><span>Hanches (cm)</span><input id="me-hanches" inputmode="decimal" placeholder="98"></label></div>
+      <label class="fld"><span>Note</span><input id="me-note" placeholder="Ressenti, remarque…"></label>
       <button class="btn p full" data-act="add-me">Enregistrer la mesure</button></div>`:"";
   const rows=ms.map((m,i)=>({m,i})).reverse().map(({m,i})=>`
-    <div class="mrow"><div><span class="mv">${m.poids} kg</span><span class="md">${frDate(m.date)}</span>${m.note?`<div class="md" style="margin-left:0">${esc(m.note)}</div>`:""}</div>
+    <div class="mrow"><div><span class="mv">${m.poids} kg</span><span class="md">${frDate(m.date)}</span>${m.taille||m.hanches?`<div class="md" style="margin-left:0">${m.taille?`Taille ${m.taille} cm`:''}${m.taille&&m.hanches?' · ':''}${m.hanches?`Hanches ${m.hanches} cm`:''}</div>`:""}${m.note?`<div class="md" style="margin-left:0">${esc(m.note)}</div>`:""}</div>
     ${editable?`<button class="x" data-act="del-me" data-idx="${i}">×</button>`:""}</div>`).join("");
   return `<div class="chartbox">${chart(ms)}</div>${form}${rows}`;
 }
@@ -593,7 +619,13 @@ function seancesTab(c,editable){
 }
 function clientSpace(c){
   if(!c)return `<p class="muted" style="text-align:center;margin-top:40px">Sélectionnez un client en haut de l'écran.</p>`;
-  const banner=`<div class="cbanner"><div class="lab">Votre objectif</div><div class="obj">${esc(c.objectif||"—")}</div></div>`;
+  const r=forfaitRestant(c);
+  const rdv=c.prochainRdv?new Date(c.prochainRdv):null;
+  const banner=`<div class="cbanner"><div class="lab">Votre objectif</div><div class="obj">${esc(c.objectif||"—")}</div>
+    ${(r!==null||rdv)?`<div style="display:flex;gap:14px;margin-top:10px;font-size:12.5px;color:rgba(255,255,255,.85)">
+      ${r!==null?`<span>Séances restantes : <b>${r}</b></span>`:''}
+      ${rdv&&rdv>=new Date(Date.now()-3600*1000)?`<span>Prochain RDV : <b>${rdv.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})} ${rdv.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</b></span>`:''}
+    </div>`:''}</div>`;
   let inner=S.clientTab==="programme"?programme(c,false):S.clientTab==="progres"?progres(c,true):S.clientTab==="messages"?messagesTab(c,false):S.clientTab==="photos"?photosTab(c,true):seancesTab(c,true);
   return banner+inner;
 }
@@ -609,6 +641,14 @@ function addModal(){
     <button class="btn p full" data-act="modal-create">Créer le client</button></div></div></div>`;
 }
 
+
+
+/* forfait : séances restantes */
+function forfaitRestant(c){
+  if(!c.forfaitTotal) return null;
+  const done=(c.seances||[]).filter(s=>s.fait).length;
+  return Math.max(0, c.forfaitTotal - done);
+}
 
 /* ===== MESSAGES ===== */
 function messagesTab(c,isCoach){
@@ -735,7 +775,14 @@ document.addEventListener("click",e=>{
     case "back": S.view="clients"; render(); break;
     case "dtab": S.detailTab=t.dataset.dtab; S.confirmDel=false;
       render();
-      if(t.dataset.dtab==="messages"){ reloadKeepingView(); }
+      if(t.dataset.dtab==="messages"){
+        reloadKeepingView().then(()=>{
+          const cc=sel(); if(!cc) return;
+          let changed=false;
+          (cc.messages||[]).forEach(m=>{ if(m.from==="client"&&!m.lu){ m.lu=true; changed=true; } });
+          if(changed){ sb.from("clients").update(clientToRow(cc)).eq("id",cc.id).then(()=>{}); render(); }
+        });
+      }
       break;
     case "add-open": S.showAdd=true; render(); break;
     case "modal-close": S.showAdd=false; render(); break;
@@ -750,7 +797,12 @@ document.addEventListener("click",e=>{
       save(); render(); break; }
     case "del-ex": if(c){ c.program=(c.program||[]).filter(x=>x.id!==t.dataset.id); save(); render(); } break;
     case "add-me":{ if(!c) return; const p=parseFloat(String(val("me-poids")).replace(",",".")); if(isNaN(p)) return;
-      c.mesures=c.mesures||[]; c.mesures.push({date:today(),poids:p,note:val("me-note")}); c.mesures.sort((x,y)=>x.date.localeCompare(y.date)); save(); render(); break; }
+      const taille=parseFloat(String(val("me-taille")).replace(",","."));
+      const hanches=parseFloat(String(val("me-hanches")).replace(",","."));
+      const m={date:today(),poids:p,note:val("me-note")};
+      if(!isNaN(taille)) m.taille=taille;
+      if(!isNaN(hanches)) m.hanches=hanches;
+      c.mesures=c.mesures||[]; c.mesures.push(m); c.mesures.sort((x,y)=>x.date.localeCompare(y.date)); save(); render(); break; }
     case "del-me": if(c){ c.mesures=(c.mesures||[]).filter((_,i)=>i!==+t.dataset.idx); save(); render(); } break;
     case "add-se":{ if(!c) return; c.seances=c.seances||[]; c.seances.push({date:today(),fait:true,ressenti:val("se-ressenti"),note:val("se-note")}); c.seances.sort((x,y)=>y.date.localeCompare(x.date)); save(); render(); break; }
     case "toggle-se": if(c){ const i=+t.dataset.idx; c.seances[i].fait=!c.seances[i].fait; save(); render(); } break;
@@ -778,6 +830,8 @@ document.addEventListener("click",e=>{
   }
 });
 document.addEventListener("input",e=>{
+  const eln=e.target.closest("[data-bind-num]");
+  if(eln){ const c=sel(); if(!c) return; const v=parseFloat(String(eln.value).replace(",",".")); c[eln.dataset.bindNum]=isNaN(v)?null:v; save(); return; }
   const el=e.target.closest("[data-bind]"); if(!el) return;
   const c=sel(); if(!c) return; c[el.dataset.bind]=el.value; save();
 });
