@@ -402,7 +402,7 @@ function render(){
       <button data-act="logout" style="border:none;background:var(--ink2);color:#E8DCD0;border-radius:999px;padding:6px 12px;font-family:'Archivo';font-weight:700;font-size:12px;cursor:pointer">Quitter</button></div>
       <p class="sub">${cc?esc(cc.nom):""} · Espace client</p></header>`;
     const body=clientSpace(cc);
-    const nav=[["programme","Programme","▤"],["progres","Progrès","◔"],["seances","Séances","✓"]].map(([k,l,i])=>`<button data-act="nav-client" data-ctab="${k}" class="${S.clientTab===k?'on':''}"><span class="ic">${i}</span>${l}</button>`).join("");
+    const nav=[["programme","Programme","▤"],["progres","Progrès","◔"],["seances","Séances","✓"],["messages","Msg","✉"],["photos","Photos","◫"]].map(([k,l,i])=>`<button data-act="nav-client" data-ctab="${k}" class="${S.clientTab===k?'on':''}"><span class="ic">${i}</span>${l}</button>`).join("");
     root.innerHTML=`<div class="wrap">${head}<main>${body}</main><nav>${nav}</nav><div id="toast" class="toast" style="display:none"></div></div>`;
     return;
   }
@@ -420,7 +420,7 @@ function render(){
   if(S.role==="coach"){
     nav=[["dashboard","Accueil","◆"],["clients","Clients","☰"]].map(([k,l,i])=>`<button data-act="nav" data-view="${k}" class="${(S.view===k||(k==='clients'&&S.view==='detail'))?'on':''}"><span class="ic">${i}</span>${l}</button>`).join("");
   }else{
-    nav=[["programme","Programme","▤"],["progres","Progrès","◔"],["seances","Séances","✓"]].map(([k,l,i])=>`<button data-act="nav-client" data-ctab="${k}" class="${S.clientTab===k?'on':''}"><span class="ic">${i}</span>${l}</button>`).join("");
+    nav=[["programme","Programme","▤"],["progres","Progrès","◔"],["seances","Séances","✓"],["messages","Msg","✉"],["photos","Photos","◫"]].map(([k,l,i])=>`<button data-act="nav-client" data-ctab="${k}" class="${S.clientTab===k?'on':''}"><span class="ic">${i}</span>${l}</button>`).join("");
   }
   if(S.showAdd) modal=addModal();
   root.innerHTML=`<div class="wrap">${head}<main>${body}</main><nav>${nav}</nav><div id="toast" class="toast" style="display:none"></div>${modal}</div>`;
