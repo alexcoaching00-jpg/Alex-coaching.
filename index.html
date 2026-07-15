@@ -220,42 +220,51 @@ window.supabase={
     // DB
     function qb(table){
       let _filters=[], _order=null, _single=false, _select='*';
-      const q={
-        select(cols){_select=cols||'*';return q;},
-        eq(col,val){_filters.push(`${col}=eq.${encodeURIComponent(val)}`);return q;},
-        order(col,{ascending}={}){_order=`${col}.${ascending===false?'desc':'asc'}`;return q;},
-        single(){_single=true;return q;},
-        async then(resolve){
-          let path=`${base}/rest/v1/${table}?select=${_select}`;
-          if(_filters.length) path+='&'+_filters.join('&');
-          if(_order) path+=`&order=${_order}`;
-          const h={...headers(),'Prefer':_single?'return=representation':'return=representation'};
+      let _method='GET', _body=null;
+      async function exec(){
+        let path=`${base}/rest/v1/${table}?`;
+        const params=[];
+        if(_method==='GET') params.push('select='+_select);
+        if(_filters.length) params.push(..._filters);
+        if(_order) params.push('order='+_order);
+        path+=params.join('&');
+        const h={...headers()};
+        if(_method==='GET'){
           if(_single) h['Accept']='application/vnd.pgrst.object+json';
-          const r=await fetch(path,{headers:h}).catch(e=>({ok:false,json:async()=>({message:e.message})}));
-          const d=await r.json();
-          if(!r.ok) return resolve({data:null,error:{message:d.message||d.hint||JSON.stringify(d)}});
-          resolve({data:d,error:null});
-        },
-        async insert(body){
-          const r=await fetch(`${base}/rest/v1/${table}`,{method:'POST',headers:{...headers(),'Prefer':'return=representation'},body:JSON.stringify(body)});
-          const d=await r.json();
-          if(!r.ok) return {data:null,error:{message:d.message||d.hint||JSON.stringify(d)}};
-          const result=Array.isArray(d)?d[0]:d;
-          return {data:result,error:null,select:()=>({single:()=>({then:fn=>fn({data:result,error:null})})})};
-        },
-        async update(body){
-          let path=`${base}/rest/v1/${table}?`;
-          if(_filters.length) path+=_filters.join('&');
-          const r=await fetch(path,{method:'PATCH',headers:{...headers(),'Prefer':'return=representation'},body:JSON.stringify(body)});
-          const d=await r.json();
-          if(!r.ok) return {data:null,error:{message:d.message||d.hint||JSON.stringify(d)}};
-          return {data:d,error:null};
-        },
-        async delete(){
-          let path=`${base}/rest/v1/${table}?`;
-          if(_filters.length) path+=_filters.join('&');
-          const r=await fetch(path,{method:'DELETE',headers:headers()});
-          return r.ok?{error:null}:{error:{message:'Delete failed'}};
+        } else {
+          h['Prefer']='return=representation';
+        }
+        const opts={method:_method,headers:h};
+        if(_body!=null) opts.body=JSON.stringify(_body);
+        let r;
+        try{ r=await fetch(path,opts); }
+        catch(e){ return {data:null,error:{message:'Réseau: '+e.message}}; }
+        if(_method==='DELETE'){
+          if(!r.ok){ const d=await r.json().catch(()=>({})); return {data:null,error:{message:d.message||'Erreur'}}; }
+          return {data:null,error:null};
+        }
+        let d; try{ d=await r.json(); }catch(e){ d=null; }
+        if(!r.ok) return {data:null,error:{message:(d&&(d.message||d.hint))||JSON.stringify(d)||('HTTP '+r.status)}};
+        let out=d;
+        if((_method==='POST'||_method==='PATCH') && Array.isArray(d) && _single!==false){ /* keep array unless single */ }
+        return {data:d,error:null};
+      }
+      const q={
+        select(cols){_select=cols||'*'; if(_method==='POST'||_method==='PATCH'){ /* return representation */ } return q;},
+        eq(col,val){_filters.push(`${col}=eq.${encodeURIComponent(val)}`);return q;},
+        order(col,o){const asc=!(o&&o.ascending===false);_order=`${col}.${asc?'asc':'desc'}`;return q;},
+        single(){_single=true;return q;},
+        insert(body){_method='POST';_body=body;return q;},
+        update(body){_method='PATCH';_body=body;return q;},
+        delete(){_method='DELETE';return q;},
+        then(resolve,reject){
+          return exec().then(res=>{
+            // Pour insert/update avec .select().single() → renvoyer objet unique
+            if((_method==='POST'||_method==='PATCH') && _single && Array.isArray(res.data)){
+              res={data:res.data[0]||null,error:res.error};
+            }
+            resolve(res);
+          },reject);
         }
       };
       return q;
