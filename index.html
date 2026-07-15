@@ -17,7 +17,7 @@
 -->
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <style>
-  :root{--ink:#0F0F0F;--ink2:#1C1C1C;--base:#141414;--card:#1E1E1E;--red:#C1121F;--red2:#9B0E18;--grey:#9E9E9E;--grey2:#616161;--line:#2A2A2A;--danger:#E53935;--white:#F0EEEC;--white2:#BDBDBD;}
+  :root{--ink:#0F0F0F;--ink2:#1C1C1C;--base:#141414;--card:#1E1E1E;--red:#B01F1F;--red2:#7E1712;--grey:#9E9E9E;--grey2:#616161;--line:#2A2A2A;--danger:#E53935;--white:#F0EEEC;--white2:#BDBDBD;}
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
   html,body{background:var(--base);color:var(--white);font-family:'Inter',system-ui,sans-serif;min-height:100vh}
   h1,h2,h3,.disp{font-family:'Bebas Neue',system-ui,sans-serif;letter-spacing:.04em}
@@ -121,6 +121,16 @@
   .sql{white-space:pre-wrap;background:#0A0A0A;color:#666;padding:12px;border-radius:10px;font-size:11px;line-height:1.45;overflow:auto;margin-top:8px;font-family:ui-monospace,Menlo,monospace}
   details summary{cursor:pointer;font-size:13.5px;color:var(--red);font-weight:700}
 
+  /* splash */
+  #splash{position:fixed;inset:0;background:#0D0B0A;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;transition:opacity .5s ease}
+  #splash.out{opacity:0;pointer-events:none}
+  #splash img{width:250px;max-width:78vw;border-radius:18px;box-shadow:0 10px 40px rgba(176,31,31,.35);animation:spulse 1.5s ease-in-out infinite}
+  #splash .sl{margin-top:24px;font-family:'Bebas Neue';font-size:14px;letter-spacing:.32em;color:#5A4A42;animation:sblink 1.3s ease-in-out infinite}
+  @keyframes spulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+  @keyframes sblink{0%,100%{opacity:.35}50%{opacity:1}}
+  @media (prefers-reduced-motion:reduce){#splash img,#splash .sl{animation:none}}
+
+
   /* photos */
   .photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
   .photo-item{position:relative;aspect-ratio:1;border-radius:12px;overflow:hidden;background:var(--ink2);border:1px solid var(--line)}
@@ -151,6 +161,11 @@
 </style>
 </head>
 <body>
+<div id="splash"><img id="splash-img" alt="Alex Coaching"><div class="sl">ALEX COACHING</div></div>
+<script>
+/* Auto-destruction du splash — indépendant de l'appli, ne peut pas bloquer */
+setTimeout(function(){var sp=document.getElementById('splash');if(sp){sp.classList.add('out');setTimeout(function(){if(sp.parentNode)sp.parentNode.removeChild(sp);},600);}},1400);
+</script>
 <div id="root"><div class="center"><p style="color:#666;font-family:Inter,sans-serif;font-size:14px">Connexion…</p></div></div>
 
 <script>
@@ -324,8 +339,8 @@ const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;"
 const val=id=>{const e=document.getElementById(id);return e?e.value:"";};
 const sel=()=>S.clients.find(c=>c.id===S.selectedId)||null;
 
-const rowToClient=r=>({id:r.id,nom:r.nom,objectif:r.objectif||"",formule:r.formule||FORMULES[0],niveau:r.niveau||NIVEAUX[0],notes:r.notes||"",clientEmail:r.client_email||"",dateDebut:r.date_debut||"",objectifPoids:r.objectif_poids||null,forfaitTotal:r.forfait_total||null,prochainRdv:r.prochain_rdv||"",program:r.program||[],mesures:r.mesures||[],seances:r.seances||[],messages:r.messages||[],photos:r.photos||[]});
-const clientToRow=c=>({nom:c.nom,objectif:c.objectif||null,formule:c.formule||null,niveau:c.niveau||null,notes:c.notes||null,client_email:(c.clientEmail||"").trim().toLowerCase()||null,date_debut:c.dateDebut||null,objectif_poids:c.objectifPoids||null,forfait_total:c.forfaitTotal||null,prochain_rdv:c.prochainRdv||null,program:c.program||[],mesures:c.mesures||[],seances:c.seances||[],messages:c.messages||[],photos:c.photos||[],updated_at:new Date().toISOString()});
+const rowToClient=r=>({id:r.id,nom:r.nom,objectif:r.objectif||"",formule:r.formule||FORMULES[0],niveau:r.niveau||NIVEAUX[0],notes:r.notes||"",clientEmail:r.client_email||"",dateDebut:r.date_debut||"",objectifPoids:r.objectif_poids||null,forfaitTotal:r.forfait_total||null,prochainRdv:r.prochain_rdv||"",programmeDebut:r.programme_debut||"",programmeFin:r.programme_fin||"",program:r.program||[],mesures:r.mesures||[],seances:r.seances||[],messages:r.messages||[],photos:r.photos||[]});
+const clientToRow=c=>({nom:c.nom,objectif:c.objectif||null,formule:c.formule||null,niveau:c.niveau||null,notes:c.notes||null,client_email:(c.clientEmail||"").trim().toLowerCase()||null,date_debut:c.dateDebut||null,objectif_poids:c.objectifPoids||null,forfait_total:c.forfaitTotal||null,prochain_rdv:c.prochainRdv||null,programme_debut:c.programmeDebut||null,programme_fin:c.programmeFin||null,program:c.program||[],mesures:c.mesures||[],seances:c.seances||[],messages:c.messages||[],photos:c.photos||[],updated_at:new Date().toISOString()});
 
 let toastT=null;
 function toast(msg){const t=document.getElementById("toast");if(!t)return;t.textContent=msg;t.style.display="block";clearTimeout(toastT);toastT=setTimeout(()=>t.style.display="none",1200);}
@@ -343,7 +358,8 @@ async function reloadKeepingView(){
     if(!rows) return;
     const uidNow=S.session&&S.session.user?S.session.user.id:null;
     if(S.isClient){
-      const mine=rows.find(r=>r.coach_id!==uidNow);
+      const email=(S.session&&S.session.user&&S.session.user.email||"").toLowerCase();
+      const mine=rows.find(r=>(r.client_email||"").toLowerCase()===email)||rows.find(r=>r.coach_id!==uidNow);
       if(mine){ S.clients=[rowToClient(mine)]; S.selectedId=mine.id; }
     } else {
       const keepId=S.selectedId;
@@ -364,17 +380,22 @@ async function loadClients(silent){
   const coachRows=rows.filter(r=>r.coach_id===uidNow);
   const clientRows=rows.filter(r=>r.coach_id!==uidNow);
 
-  if(clientRows.length>0 && coachRows.length===0){
-    // Espace client
+  if(clientRows.length>0){
+    // Une fiche client existe pour cet e-mail → espace client, toujours prioritaire
     const mine=clientRows[0];
     S.isClient=true; S.role="client";
-    if(!silent && !S.clientTab) S.clientTab="programme";
     if(!S.clientTab) S.clientTab="programme";
     S.clients=[rowToClient(mine)]; S.selectedId=mine.id; S.loading=false; render(); return;
   }
 
+  if(coachRows.length===0){
+    // Aucune fiche du tout : compte non activé (inscription sans invitation)
+    S.isClient=false; S.notActivated=true;
+    S.clients=[]; S.loading=false; render(); return;
+  }
+
   // Espace coach
-  S.isClient=false; S.role="coach";
+  S.isClient=false; S.notActivated=false; S.role="coach";
   S.clients=coachRows.map(rowToClient);
   S.loading=false; render();
 }
@@ -392,11 +413,11 @@ function chart(mesures){
   const px=i=>pad.l+(i/(pts.length-1))*(W-pad.l-pad.r);
   const py=v=>pad.t+(1-(v-minY)/(maxY-minY||1))*(H-pad.t-pad.b);
   const line=pts.map((m,i)=>`${px(i).toFixed(1)},${py(m.poids).toFixed(1)}`).join(" ");
-  const dots=pts.map((m,i)=>`<circle cx="${px(i).toFixed(1)}" cy="${py(m.poids).toFixed(1)}" r="4" fill="#C1121F"/>`).join("");
+  const dots=pts.map((m,i)=>`<circle cx="${px(i).toFixed(1)}" cy="${py(m.poids).toFixed(1)}" r="4" fill="#B01F1F"/>`).join("");
   const xlab=pts.map((m,i)=>`<text x="${px(i).toFixed(1)}" y="${H-6}" font-size="10" fill="#6B7770" text-anchor="middle">${frDate(m.date)}</text>`).join("");
   const grid=[0,.5,1].map(t=>{const y=pad.t+t*(H-pad.t-pad.b),v=(maxY-t*(maxY-minY)).toFixed(1);
     return `<line x1="${pad.l}" y1="${y}" x2="${W-pad.r}" y2="${y}" stroke="#DBE0D6" stroke-dasharray="3 3"/><text x="4" y="${y+3}" font-size="9" fill="#6B7770">${v}</text>`;}).join("");
-  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Courbe de poids">${grid}<polyline points="${line}" fill="none" stroke="#C1121F" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>${dots}${xlab}</svg>`;
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Courbe de poids">${grid}<polyline points="${line}" fill="none" stroke="#B01F1F" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>${dots}${xlab}</svg>`;
 }
 
 function authScreen(){
@@ -421,6 +442,16 @@ function render(){
   const root=document.getElementById("root");
   if(!S.session){ root.innerHTML=authScreen(); return; }
   if(S.loading){ root.innerHTML=`<div class="center"><p class="muted">Chargement…</p></div>`; return; }
+
+  if(S.notActivated){
+    root.innerHTML=`<div class="center"><div class="authcard" style="text-align:center">
+      <img src="${LOGO}" alt="Alex Coaching" class="logo-img">
+      <p class="lead" style="margin-bottom:6px">Compte créé, mais pas encore activé.</p>
+      <p class="muted" style="margin-bottom:18px">Votre coach doit associer votre adresse e-mail à votre fiche. Contactez-le, puis reconnectez-vous.</p>
+      <button class="btn g full" data-act="logout">Se déconnecter</button>
+    </div></div>`;
+    return;
+  }
 
   // ---- Espace CLIENT verrouillé (accès par invitation) ----
   if(S.isClient){
@@ -571,6 +602,28 @@ function infosTab(c){
 }
 function programme(c,editable){
   const prog=c.program||[];
+  const progHeader=(()=>{
+    const d=c.programmeDebut, f=c.programmeFin;
+    let bar='';
+    if(d&&f){
+      const dd=new Date(d), df=new Date(f), now=new Date();
+      const total=Math.max(1,Math.round((df-dd)/(7*24*3600*1000)));
+      const done=Math.max(0,Math.min(total,Math.floor((now-dd)/(7*24*3600*1000))+1));
+      const pct=Math.min(100,Math.round(done/total*100));
+      bar=`<div style="margin-top:8px"><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--grey)"><span>Semaine ${done}/${total}</span><span>${pct}%</span></div><div class="obj-bar"><div class="obj-fill" style="width:${pct}%"></div></div></div>`;
+    }
+    if(editable){
+      return `<div class="panel" style="margin-bottom:14px"><div class="ph" style="font-size:14px">Cycle du programme</div>
+        <div class="r2">
+          <label class="fld" style="margin-bottom:0"><span>Début</span><input type="date" data-bind="programmeDebut" value="${esc(d||"")}"></label>
+          <label class="fld" style="margin-bottom:0"><span>Fin</span><input type="date" data-bind="programmeFin" value="${esc(f||"")}"></label>
+        </div>${bar}</div>`;
+    }
+    if(d||f){
+      return `<div class="panel" style="margin-bottom:14px"><div style="font-size:13px;color:var(--white2)">Programme ${d?`du <b>${frDate(d)}</b>`:""} ${f?`au <b>${frDate(f)}</b>`:""}</div>${bar}</div>`;
+    }
+    return '';
+  })();
   const exCard=(e,i)=>{
     const hist=(e.historique||[]);
     const last3=hist.slice(-3);
@@ -585,7 +638,9 @@ function programme(c,editable){
   // Grouper par séance (bloc)
   const blocs={};
   prog.forEach(e=>{const b=e.bloc||"";(blocs[b]=blocs[b]||[]).push(e);});
-  const blocKeys=Object.keys(blocs).sort((a,b)=>a===""?1:b===""?-1:a.localeCompare(b));
+  const JOURS=["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"];
+  const blocRank=b=>{ if(b==="") return 100; const j=JOURS.indexOf(b); return j>=0?j:50; };
+  const blocKeys=Object.keys(blocs).sort((a,b)=>blocRank(a)-blocRank(b)||a.localeCompare(b));
   let list;
   if(!prog.length){
     list=`<p class="muted" style="margin-bottom:14px">Aucun exercice.${editable?" Ajoutez-en ci-dessous.":""}</p>`;
@@ -593,7 +648,7 @@ function programme(c,editable){
     list=prog.map(exCard).join("");
   } else {
     list=blocKeys.map(b=>`
-      ${b?`<div class="sec-head" style="margin-top:8px"><h2 style="font-size:16px;color:var(--red)">Séance ${b}</h2></div>`:`<div class="sec-head" style="margin-top:8px"><h2 style="font-size:16px;color:var(--grey)">Autres exercices</h2></div>`}
+      ${b?`<div class="sec-head" style="margin-top:8px"><h2 style="font-size:16px;color:var(--red)">${b.length<=2?`Séance ${b}`:b}</h2></div>`:`<div class="sec-head" style="margin-top:8px"><h2 style="font-size:16px;color:var(--grey)">Autres exercices</h2></div>`}
       ${blocs[b].map(exCard).join("")}`).join("");
   }
   const form=editable?`
@@ -603,7 +658,7 @@ function programme(c,editable){
       <label class="fld"><span>Reps</span><input id="ex-reps" value="12"></label></div>
       <div class="r2"><label class="fld"><span>Charge</span><input id="ex-charge" placeholder="40 kg"></label>
       <label class="fld"><span>Repos</span><input id="ex-repos" placeholder="60 s"></label></div>
-      <div class="r2"><label class="fld"><span>Séance</span><select id="ex-bloc"><option value="">—</option><option>A</option><option>B</option><option>C</option></select></label>
+      <div class="r2"><label class="fld"><span>Jour</span><select id="ex-bloc"><option value="">—</option><option>Lundi</option><option>Mardi</option><option>Mercredi</option><option>Jeudi</option><option>Vendredi</option><option>Samedi</option><option>Dimanche</option></select></label>
       <label class="fld"><span>RIR cible</span><select id="ex-rir"><option value="">—</option><option>0-1</option><option>1-2</option><option>2-3</option><option>3-4</option></select></label></div>
       <label class="fld"><span>Consigne (optionnel)</span><input id="ex-note" placeholder="Amplitude contrôlée…"></label>
       <button class="btn p full" data-act="add-ex">Ajouter l'exercice</button></div>
@@ -615,7 +670,7 @@ function programme(c,editable){
       </div>
       <p class="muted" style="font-size:12px;margin-top:8px">Copie tous les exercices (le programme existant du client cible sera remplacé).</p>
     </div>`:""}`:"";
-  return list+form;
+  return progHeader+list+form;
 }
 function progres(c,editable){
   const ms=c.mesures||[];
@@ -901,6 +956,7 @@ document.addEventListener("change",e=>{
 
 /* ===== boot ===== */
 function bootApp(){
+  const spImg=document.getElementById('splash-img'); if(spImg) spImg.src=LOGO;
   sb = window.supabase.createClient(SUPA_URL, SUPA_KEY);
   render();
   sb.auth.onAuthStateChange((_evt,session)=>{
