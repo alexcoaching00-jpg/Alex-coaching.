@@ -571,13 +571,31 @@ function infosTab(c){
 }
 function programme(c,editable){
   const prog=c.program||[];
-  let list=prog.length?prog.map((e,i)=>`
-    <div class="card"><div style="display:flex;align-items:flex-start;justify-content:space-between">
-      <div style="flex:1"><div style="display:flex;align-items:center;gap:8px"><span class="exi">${String(i+1).padStart(2,"0")}</span><span class="exn">${esc(e.nom)}</span></div>
+  const exCard=(e,i)=>{
+    const hist=(e.historique||[]);
+    const last3=hist.slice(-3);
+    return `<div class="card"><div style="display:flex;align-items:flex-start;justify-content:space-between">
+      <div style="flex:1"><div style="display:flex;align-items:center;gap:8px"><span class="exi">${String(i+1).padStart(2,"0")}</span><span class="exn">${esc(e.nom)}</span>${e.rir?`<span class="tag ink" style="font-size:10px">RIR ${esc(e.rir)}</span>`:""}</div>
       <div class="exd">${e.series} × ${esc(e.reps)}${e.charge?` · ${esc(e.charge)}`:""}${e.repos?` · repos ${esc(e.repos)}`:""}</div>
-      ${e.note?`<div class="exnote">${esc(e.note)}</div>`:""}</div>
-      ${editable?`<button class="x" data-act="del-ex" data-id="${e.id}">×</button>`:""}</div></div>`).join("")
-    : `<p class="muted" style="margin-bottom:14px">Aucun exercice.${editable?" Ajoutez-en ci-dessous.":""}</p>`;
+      ${e.note?`<div class="exnote">${esc(e.note)}</div>`:""}
+      ${last3.length?`<div class="exd" style="color:#4CAF50;font-size:12px">Charges : ${last3.map(h=>`${esc(h.charge)} <span style="color:var(--grey2)">(${frDate(h.date)})</span>`).join(" → ")}</div>`:""}
+      <button class="link" style="font-size:12px;padding:0;margin-top:4px" data-act="log-charge" data-id="${e.id}">+ Noter la charge du jour</button></div>
+      ${editable?`<button class="x" data-act="del-ex" data-id="${e.id}">×</button>`:""}</div></div>`;
+  };
+  // Grouper par séance (bloc)
+  const blocs={};
+  prog.forEach(e=>{const b=e.bloc||"";(blocs[b]=blocs[b]||[]).push(e);});
+  const blocKeys=Object.keys(blocs).sort((a,b)=>a===""?1:b===""?-1:a.localeCompare(b));
+  let list;
+  if(!prog.length){
+    list=`<p class="muted" style="margin-bottom:14px">Aucun exercice.${editable?" Ajoutez-en ci-dessous.":""}</p>`;
+  } else if(blocKeys.length===1 && blocKeys[0]===""){
+    list=prog.map(exCard).join("");
+  } else {
+    list=blocKeys.map(b=>`
+      ${b?`<div class="sec-head" style="margin-top:8px"><h2 style="font-size:16px;color:var(--red)">Séance ${b}</h2></div>`:`<div class="sec-head" style="margin-top:8px"><h2 style="font-size:16px;color:var(--grey)">Autres exercices</h2></div>`}
+      ${blocs[b].map(exCard).join("")}`).join("");
+  }
   const form=editable?`
     <div class="panel"><div class="ph">Nouvel exercice</div>
       <label class="fld"><span>Exercice</span><input id="ex-nom" placeholder="Ex. Presse à cuisses"></label>
@@ -585,8 +603,18 @@ function programme(c,editable){
       <label class="fld"><span>Reps</span><input id="ex-reps" value="12"></label></div>
       <div class="r2"><label class="fld"><span>Charge</span><input id="ex-charge" placeholder="40 kg"></label>
       <label class="fld"><span>Repos</span><input id="ex-repos" placeholder="60 s"></label></div>
+      <div class="r2"><label class="fld"><span>Séance</span><select id="ex-bloc"><option value="">—</option><option>A</option><option>B</option><option>C</option></select></label>
+      <label class="fld"><span>RIR cible</span><select id="ex-rir"><option value="">—</option><option>0-1</option><option>1-2</option><option>2-3</option><option>3-4</option></select></label></div>
       <label class="fld"><span>Consigne (optionnel)</span><input id="ex-note" placeholder="Amplitude contrôlée…"></label>
-      <button class="btn p full" data-act="add-ex">Ajouter l'exercice</button></div>`:"";
+      <button class="btn p full" data-act="add-ex">Ajouter l'exercice</button></div>
+    ${(S.clients.length>1&&prog.length)?`<div class="panel" style="margin-top:12px">
+      <div class="ph" style="font-size:14px">Dupliquer ce programme</div>
+      <div class="r2" style="align-items:flex-end">
+        <label class="fld" style="flex:2;margin-bottom:0"><span>Vers le client</span><select id="dup-target">${S.clients.filter(x=>x.id!==c.id).map(x=>`<option value="${x.id}">${esc(x.nom)}</option>`).join("")}</select></label>
+        <button class="btn g" data-act="dup-program" style="flex:1">Copier</button>
+      </div>
+      <p class="muted" style="font-size:12px;margin-top:8px">Copie tous les exercices (le programme existant du client cible sera remplacé).</p>
+    </div>`:""}`:"";
   return list+form;
 }
 function progres(c,editable){
@@ -793,9 +821,27 @@ document.addEventListener("click",e=>{
     case "del-cancel": S.confirmDel=false; render(); break;
     case "del-confirm": deleteSelected(); break;
     case "add-ex":{ if(!c) return; const nom=val("ex-nom").trim(); if(!nom) return;
-      c.program=c.program||[]; c.program.push({id:uid(),nom,series:+val("ex-series")||3,reps:val("ex-reps"),charge:val("ex-charge"),repos:val("ex-repos"),note:val("ex-note")});
+      c.program=c.program||[]; c.program.push({id:uid(),nom,series:+val("ex-series")||3,reps:val("ex-reps"),charge:val("ex-charge"),repos:val("ex-repos"),note:val("ex-note"),bloc:val("ex-bloc")||"",rir:val("ex-rir")||"",historique:[]});
       save(); render(); break; }
     case "del-ex": if(c){ c.program=(c.program||[]).filter(x=>x.id!==t.dataset.id); save(); render(); } break;
+    case "dup-program":{ if(!c) return;
+      const targetId=val("dup-target"); if(!targetId) return;
+      const target=S.clients.find(x=>x.id===targetId); if(!target) return;
+      if(!confirm(`Copier le programme de ${c.nom} vers ${target.nom} ?\nSon programme actuel sera remplacé.`)) return;
+      target.program=(c.program||[]).map(e=>({...e,id:uid(),historique:[]}));
+      sb.from("clients").update(clientToRow(target)).eq("id",target.id).then(({error})=>{
+        toast(error?"Erreur de copie":"Programme copié vers "+target.nom);
+      });
+      break; }
+    case "log-charge":{ if(!c) return;
+      const ex=(c.program||[]).find(x=>x.id===t.dataset.id); if(!ex) return;
+      const v=prompt(`Charge du jour pour « ${ex.nom} » ?\n(ex : 45 kg, 12 reps à 40 kg…)`, ex.historique&&ex.historique.length?ex.historique[ex.historique.length-1].charge:"");
+      if(!v||!v.trim()) return;
+      ex.historique=ex.historique||[];
+      ex.historique.push({date:today(),charge:v.trim()});
+      // garder les 20 dernières entrées max
+      if(ex.historique.length>20) ex.historique=ex.historique.slice(-20);
+      save(); render(); break; }
     case "add-me":{ if(!c) return; const p=parseFloat(String(val("me-poids")).replace(",",".")); if(isNaN(p)) return;
       const taille=parseFloat(String(val("me-taille")).replace(",","."));
       const hanches=parseFloat(String(val("me-hanches")).replace(",","."));
