@@ -326,27 +326,45 @@ function save(){const c=sel();if(!c||!sb)return;clearTimeout(timers[c.id]);timer
   sb.from("clients").update(clientToRow(c)).eq("id",c.id).then(({error})=>toast(error?"Erreur de sync":"Synchronisé"));
 },350);}
 
-async function loadClients(){
-  if(!sb)return; S.loading=true; render();
+// Recharge les données depuis Supabase sans casser l'onglet/vue en cours
+async function reloadKeepingView(){
+  if(!sb) return;
+  try{
+    const {data:rows}=await sb.from("clients").select("*");
+    if(!rows) return;
+    const uidNow=S.session&&S.session.user?S.session.user.id:null;
+    if(S.isClient){
+      const mine=rows.find(r=>r.coach_id!==uidNow);
+      if(mine){ S.clients=[rowToClient(mine)]; S.selectedId=mine.id; }
+    } else {
+      const keepId=S.selectedId;
+      S.clients=rows.filter(r=>r.coach_id===uidNow).map(rowToClient);
+      S.selectedId=keepId;
+    }
+    render();
+  }catch(e){}
+}
+
+async function loadClients(silent){
+  if(!sb)return;
+  if(!silent){ S.loading=true; render(); }
   const uidNow=S.session&&S.session.user?S.session.user.id:null;
 
-  // Charge toutes les fiches accessibles (RLS filtre automatiquement)
   const {data:allRows, error}=await sb.from("clients").select("*");
   const rows=allRows||[];
-
-  // Fiches dont je suis le coach
   const coachRows=rows.filter(r=>r.coach_id===uidNow);
-  // Fiches dont je suis le client (créées par quelqu'un d'autre)
   const clientRows=rows.filter(r=>r.coach_id!==uidNow);
 
   if(clientRows.length>0 && coachRows.length===0){
-    // Pur client : aucune fiche créée par moi → espace client
+    // Espace client
     const mine=clientRows[0];
-    S.isClient=true; S.role="client"; S.clientTab="programme";
+    S.isClient=true; S.role="client";
+    if(!silent && !S.clientTab) S.clientTab="programme";
+    if(!S.clientTab) S.clientTab="programme";
     S.clients=[rowToClient(mine)]; S.selectedId=mine.id; S.loading=false; render(); return;
   }
 
-  // Coach (ou compte mixte — rare) : espace coach
+  // Espace coach
   S.isClient=false; S.role="coach";
   S.clients=coachRows.map(rowToClient);
   S.loading=false; render();
@@ -701,12 +719,14 @@ document.addEventListener("click",e=>{
     case "role": S.role=t.dataset.role; if(S.role==="client"&&!S.selectedId&&S.clients[0]) S.selectedId=S.clients[0].id; render(); break;
     case "nav": S.view=t.dataset.view; render(); break;
     case "nav-client": S.clientTab=t.dataset.ctab;
-      if(t.dataset.ctab==="messages"){ loadClients().then(()=>render()); } else { render(); }
+      render();
+      if(t.dataset.ctab==="messages"){ reloadKeepingView(); }
       break;
     case "open": S.selectedId=t.dataset.id; S.view="detail"; S.detailTab="infos"; S.confirmDel=false; render(); break;
     case "back": S.view="clients"; render(); break;
     case "dtab": S.detailTab=t.dataset.dtab; S.confirmDel=false;
-      if(t.dataset.dtab==="messages"){ loadClients().then(()=>render()); } else { render(); }
+      render();
+      if(t.dataset.dtab==="messages"){ reloadKeepingView(); }
       break;
     case "add-open": S.showAdd=true; render(); break;
     case "modal-close": S.showAdd=false; render(); break;
@@ -771,22 +791,19 @@ document.addEventListener("change",e=>{
 });
 
 /* ===== boot ===== */
-render();
-sb.auth.onAuthStateChange((_evt,session)=>{
-  S.session=session||null;
-  if(session){ loadClients(); } else { S.clients=[]; S.isClient=false; render(); }
-});
 function bootApp(){
-
-sb = window.supabase.createClient(SUPA_URL, SUPA_KEY);
-render();
-sb.auth.onAuthStateChange((_evt,session)=>{
-  S.session=session||null;
-  if(session){ loadClients(); } else { S.clients=[]; S.isClient=false; render(); }
-});
+  sb = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+  render();
+  sb.auth.onAuthStateChange((_evt,session)=>{
+    S.session=session||null;
+    if(session){ loadClients(); } else { S.clients=[]; S.isClient=false; render(); }
+  });
+  // Rafraîchit automatiquement les messages toutes les 8 s quand on est dans l'onglet Messages
+  setInterval(()=>{
+    const onMsg=(S.isClient && S.clientTab==="messages") || (!S.isClient && S.view==="detail" && S.detailTab==="messages");
+    if(onMsg && S.session){ reloadKeepingView(); }
+  }, 8000);
 }
-bootApp();
-
 bootApp();
 </script>
 </body>
