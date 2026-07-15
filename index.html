@@ -567,7 +567,7 @@ function seancesTab(c,editable){
 function clientSpace(c){
   if(!c)return `<p class="muted" style="text-align:center;margin-top:40px">Sélectionnez un client en haut de l'écran.</p>`;
   const banner=`<div class="cbanner"><div class="lab">Votre objectif</div><div class="obj">${esc(c.objectif||"—")}</div></div>`;
-  let inner=S.clientTab==="programme"?programme(c,false):S.clientTab==="progres"?progres(c,true):S.clientTab==="messages"?messagesTab(c,false):S.clientTab==="photos"?photosTab(c,false):seancesTab(c,true);
+  let inner=S.clientTab==="programme"?programme(c,false):S.clientTab==="progres"?progres(c,true):S.clientTab==="messages"?messagesTab(c,false):S.clientTab==="photos"?photosTab(c,true):seancesTab(c,true);
   return banner+inner;
 }
 function addModal(){
