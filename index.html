@@ -132,6 +132,26 @@
   .sql{white-space:pre-wrap;background:#0A0A0A;color:#666;padding:12px;border-radius:10px;font-size:11px;line-height:1.45;overflow:auto;margin-top:8px;font-family:ui-monospace,Menlo,monospace}
   details summary{cursor:pointer;font-size:13.5px;color:var(--red);font-weight:700}
 
+  /* === anti-débordement === */
+  .wrap{overflow-x:clip}
+  img,svg,audio,video{max-width:100%}
+  .r2>*,.msg-input>*,.hd-top>*,.pstats>*,.crow>*{min-width:0}
+  .tabbar{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .tabbar::-webkit-scrollbar{display:none}
+  .tabbar button{flex:1 0 auto;padding:8px 12px;white-space:nowrap}
+  .pstat .pv{font-size:19px;white-space:nowrap}
+  .pstat{padding:10px 8px}
+  .msg{overflow-wrap:anywhere}
+  .msg audio{width:230px;max-width:56vw;height:36px}
+  .dhead h2{overflow-wrap:anywhere}
+  .crow .nm,.crow .ob{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .logo .wm{font-size:20px;white-space:nowrap}
+  nav button{font-size:10px}
+  .fld input,.fld select,.fld textarea{max-width:100%}
+  .exd,.exnote{overflow-wrap:anywhere}
+  .mrow .md{overflow-wrap:anywhere}
+
+
   /* bilan progression */
   .pstats{display:flex;gap:10px;margin-bottom:12px}
   .pstat{flex:1;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,.3)}
@@ -370,13 +390,26 @@ function save(){const c=sel();if(!c||!sb)return;clearTimeout(timers[c.id]);timer
 },350);}
 /* patch ciblé d'un seul champ (messages, photos, bilans) : léger et fiable */
 function patchField(c,field,cb){
+  PENDING++;
   sb.from("clients").update({[field]:c[field]||[],updated_at:new Date().toISOString()}).eq("id",c.id)
-    .then(({error})=>{ if(cb)cb(error); else toast(error?"Erreur de sync":"Synchronisé"); });
+    .then(({error})=>{
+      PENDING=Math.max(0,PENDING-1);
+      if(error){ alert("Envoi impossible : "+(error.message||"erreur réseau")+"\nRéessayez."); }
+      if(cb)cb(error); else if(!error) toast("Synchronisé");
+    });
 }
 
 // Recharge les données depuis Supabase sans casser l'onglet/vue en cours
+let PENDING=0; // envois en cours : on ne recharge pas pendant
+function isTypingOrRecording(){
+  const ta=document.getElementById("msg-text");
+  if(ta && (document.activeElement===ta || ta.value.trim())) return true;
+  if(typeof REC!=="undefined" && REC.rec && REC.rec.state==="recording") return true;
+  return false;
+}
 async function reloadKeepingView(){
   if(!sb) return;
+  if(PENDING>0 || isTypingOrRecording()) return; // jamais pendant une frappe, un enregistrement ou un envoi
   try{
     const {data:rows}=await sb.from("clients").select("*");
     if(!rows) return;
@@ -390,7 +423,10 @@ async function reloadKeepingView(){
       S.clients=rows.filter(r=>r.coach_id===uidNow).map(rowToClient);
       S.selectedId=keepId;
     }
+    const ta=document.getElementById("msg-text");
+    const draft=ta?ta.value:null;
     render();
+    if(draft){ const ta2=document.getElementById("msg-text"); if(ta2) ta2.value=draft; }
   }catch(e){}
 }
 
@@ -811,7 +847,7 @@ async function toggleVoice(role){
     REC.role=role;
     REC.media=await navigator.mediaDevices.getUserMedia({audio:true});
     const mime=MediaRecorder.isTypeSupported("audio/webm;codecs=opus")?"audio/webm;codecs=opus":"";
-    REC.rec=new MediaRecorder(REC.media, mime?{mimeType:mime,audioBitsPerSecond:24000}:{audioBitsPerSecond:24000});
+    REC.rec=new MediaRecorder(REC.media, mime?{mimeType:mime,audioBitsPerSecond:16000}:{audioBitsPerSecond:16000});
     REC.chunks=[]; REC.secs=0;
     REC.rec.ondataavailable=e=>{ if(e.data.size) REC.chunks.push(e.data); };
     REC.rec.onstop=()=>{
