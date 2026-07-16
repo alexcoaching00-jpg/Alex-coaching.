@@ -339,7 +339,7 @@ window.supabase={
 </script>
 <script>
 "use strict";
-const APP_VERSION="v2.5 — 16/07/2026";
+const APP_VERSION="v2.6 — 16/07/2026";
 const SUPA_URL="https://xjmelkqtropownhfmuuh.supabase.co";
 const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqbWVsa3F0cm9wb3duaGZtdXVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3MDI3MTYsImV4cCI6MjA5OTI3ODcxNn0.mYoJx96xZ9SBaGky9EN8_MoTuSy7BY5D_aGB7JIFQyg";
 
@@ -559,7 +559,7 @@ function render(){
       <button data-act="logout" style="border:none;background:var(--ink2);color:#E8DCD0;border-radius:999px;padding:6px 12px;font-family:'Archivo';font-weight:700;font-size:12px;cursor:pointer">Quitter</button></div>
       ${S.clients.length>0?`<div class="pick"><label>Vous êtes</label><select data-act="pick-client">${S.clients.map(cl=>`<option value="${cl.id}" ${cl.id===S.selectedId?'selected':''}>${esc(cl.nom)}</option>`).join("")}</select></div>`:`<p class="sub">Espace client</p>`}</header>`;
     const body=clientSpace(cc);
-    const nav=[["programme","Programme","▤"],["progres","Progrès","◔"],["seances","Séances","✓"],["messages","Msg","✉"],["bilan","Bilan","◫"]].map(([k,l,i])=>`<button data-act="nav-client" data-ctab="${k}" class="${S.clientTab===k?'on':''}"><span class="ic">${i}</span>${l}</button>`).join("");
+    const nav=[["programme","Programme","▤"],["progres","Progrès","◔"],["seances","Séances","✓"],["messages","Msg","✉"],["bilan","Bilan","◫"],["nutrition","Nutri","🍎"]].map(([k,l,i])=>`<button data-act="nav-client" data-ctab="${k}" class="${S.clientTab===k?'on':''}"><span class="ic">${i}</span>${l}</button>`).join("");
     root.innerHTML=`<div class="wrap">${head}<main>${body}</main><nav>${nav}</nav><div id="toast" class="toast" style="display:none"></div></div>`;
     return;
   }
@@ -577,7 +577,7 @@ function render(){
   if(S.role==="coach"){
     nav=[["dashboard","Accueil","◆"],["clients","Clients","☰"]].map(([k,l,i])=>`<button data-act="nav" data-view="${k}" class="${(S.view===k||(k==='clients'&&S.view==='detail'))?'on':''}"><span class="ic">${i}</span>${l}</button>`).join("");
   }else{
-    nav=[["programme","Programme","▤"],["progres","Progrès","◔"],["seances","Séances","✓"],["messages","Msg","✉"],["bilan","Bilan","◫"]].map(([k,l,i])=>`<button data-act="nav-client" data-ctab="${k}" class="${S.clientTab===k?'on':''}"><span class="ic">${i}</span>${l}</button>`).join("");
+    nav=[["programme","Programme","▤"],["progres","Progrès","◔"],["seances","Séances","✓"],["messages","Msg","✉"],["bilan","Bilan","◫"],["nutrition","Nutri","🍎"]].map(([k,l,i])=>`<button data-act="nav-client" data-ctab="${k}" class="${S.clientTab===k?'on':''}"><span class="ic">${i}</span>${l}</button>`).join("");
   }
   if(S.showAdd) modal=addModal();
   root.innerHTML=`<div class="wrap">${head}<main>${body}</main><nav>${nav}</nav><div id="toast" class="toast" style="display:none"></div>${modal}</div>`;
@@ -680,10 +680,10 @@ function emptyClients(){
 }
 function detail(c){
   if(!c)return"";
-  const tabs=[["infos","Infos"],["programme","Prog."],["progres","Progrès"],["seances","Séances"],["messages","Msg"],["bilan","Bilan"]];
+  const tabs=[["infos","Infos"],["programme","Prog."],["progres","Progrès"],["seances","Séances"],["messages","Msg"],["bilan","Bilan"],["nutrition","Nutri."]];
   const unreadTab=(c.messages||[]).filter(m=>m.from==='client'&&!m.lu).length>0;
   const tabbar=tabs.map(([k,l])=>`<button data-act="dtab" data-dtab="${k}" class="${S.detailTab===k?'on':''}">${l}${k==='messages'&&unreadTab?'<span class="unread"></span>':''}</button>`).join("");
-  let inner=S.detailTab==="infos"?infosTab(c):S.detailTab==="programme"?programme(c,true):S.detailTab==="progres"?progres(c,true):S.detailTab==="messages"?messagesTab(c,true):S.detailTab==="bilan"?bilanTab(c,true):seancesTab(c,true);
+  let inner=S.detailTab==="infos"?infosTab(c):S.detailTab==="programme"?programme(c,true):S.detailTab==="progres"?progres(c,true):S.detailTab==="messages"?messagesTab(c,true):S.detailTab==="bilan"?bilanTab(c,true):S.detailTab==="nutrition"?nutritionTab(c,true):seancesTab(c,true);
   return `<button class="back" data-act="back">‹ Clients</button>
     <div class="dhead"><div class="avatar" style="width:46px;height:46px;font-size:18px">${esc(c.nom.slice(0,1))}</div>
     <div><h2>${esc(c.nom)}</h2><div class="mini"><span class="tag ${c.formule==='Petit groupe'?'am':'em'}">${esc(c.formule)}</span><span class="tag ink">${esc(c.niveau)}</span></div></div></div>
@@ -856,7 +856,7 @@ function clientSpace(c){
       ${r!==null?`<span>Séances restantes : <b>${r}</b></span>`:''}
       ${rdv&&rdv>=new Date(Date.now()-3600*1000)?`<span>Prochain RDV : <b>${rdv.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})} ${rdv.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</b></span>`:''}
     </div>`:''}</div>`;
-  let inner=S.clientTab==="programme"?programme(c,false):S.clientTab==="progres"?progres(c,false):S.clientTab==="messages"?messagesTab(c,false):S.clientTab==="bilan"?bilanTab(c,false):seancesTab(c,true);
+  let inner=S.clientTab==="programme"?programme(c,false):S.clientTab==="progres"?progres(c,false):S.clientTab==="messages"?messagesTab(c,false):S.clientTab==="bilan"?bilanTab(c,false):S.clientTab==="nutrition"?nutritionTab(c,false):seancesTab(c,true);
   return banner+inner;
 }
 function addModal(){
@@ -1188,6 +1188,120 @@ function nutriReperes(obj){
   return communs.concat(["Assiette équilibrée : ½ légumes, ¼ protéines, ¼ féculents","Écouter la satiété : manger lentement, sans écran"]);
 }
 
+
+/* ===== JOURNÉES TYPES (base 2000 kcal, grammages auto-ajustés) ===== */
+const ALIMENTS={
+  oat:{n:"Flocons d'avoine",k:370},lait:{n:"Lait demi-écrémé",k:46,ml:true},banane:{n:"Banane",k:90},
+  miel:{n:"Miel",k:300},pain:{n:"Pain complet",k:250},oeuf:{n:"Œuf",k:78,u:true},avocat:{n:"Avocat",k:160},
+  pomme:{n:"Pomme",k:52},skyr:{n:"Skyr nature",k:60},yaourt:{n:"Yaourt nature",k:60},
+  friuts_r:{n:"Fruits rouges",k:45},amandes:{n:"Amandes",k:600},pb:{n:"Beurre de cacahuète",k:590},
+  poulet:{n:"Blanc de poulet",k:110},steak5:{n:"Steak haché 5%",k:130},thon:{n:"Thon au naturel",k:110},
+  saumon:{n:"Saumon",k:200},poisson:{n:"Poisson blanc (cabillaud…)",k:82},
+  riz:{n:"Riz (poids cru)",k:350},pates:{n:"Pâtes complètes (poids cru)",k:350},quinoa:{n:"Quinoa (poids cru)",k:368},
+  pdt:{n:"Pommes de terre",k:80},legumes:{n:"Légumes verts",k:30},huile:{n:"Huile d'olive",k:900}
+};
+const MENUS=[
+ {nom:"Journée type 1",repas:[
+   {t:"Petit-déjeuner",items:[["oat",80],["lait",200],["banane",100],["miel",10]]},
+   {t:"Déjeuner",items:[["poulet",150],["riz",90],["legumes",200],["huile",15]]},
+   {t:"Collation",items:[["skyr",150],["amandes",20]]},
+   {t:"Dîner",items:[["saumon",130],["pdt",250],["legumes",200],["huile",10]]}]},
+ {nom:"Journée type 2",repas:[
+   {t:"Petit-déjeuner",items:[["pain",90],["oeuf",2],["avocat",50],["pomme",150]]},
+   {t:"Déjeuner",items:[["steak5",150],["pates",90],["legumes",200],["huile",10]]},
+   {t:"Collation",items:[["yaourt",125],["friuts_r",100],["amandes",15]]},
+   {t:"Dîner",items:[["poisson",180],["quinoa",80],["legumes",200],["huile",10]]}]},
+ {nom:"Journée type 3",repas:[
+   {t:"Petit-déjeuner",items:[["skyr",200],["oat",60],["friuts_r",100],["miel",15],["amandes",10]]},
+   {t:"Déjeuner",items:[["thon",140],["riz",90],["legumes",200],["huile",15]]},
+   {t:"Collation",items:[["pain",40],["pb",20]]},
+   {t:"Dîner",items:[["poulet",150],["pdt",300],["legumes",200],["huile",15]]}]}
+];
+function nutriMenu(c){
+  const info=nutriInfo(c); if(!info) return null;
+  const nsel=(c.nutrition&&c.nutrition.menu)||1;
+  const menu=MENUS[Math.min(MENUS.length,Math.max(1,nsel))-1];
+  const kf=info.cible/2000;
+  let totJ=0;
+  const repas=menu.repas.map(r2=>{
+    let tot=0;
+    const items=r2.items.map(([id,base])=>{
+      const a=ALIMENTS[id];
+      let q,label,kcal;
+      if(a.u){ q=Math.max(1,Math.round(base*kf)); kcal=Math.round(a.k*q); label=q+" "+a.n.toLowerCase()+(q>1?"s":""); }
+      else{ q=Math.max(5,Math.round(base*kf/5)*5); kcal=Math.round(a.k*q/100); label=a.n+" — "+q+(a.ml?" ml":" g"); }
+      tot+=kcal;
+      return {label,kcal};
+    });
+    totJ+=tot;
+    return {t:r2.t,items,tot};
+  });
+  return {nom:menu.nom,repas,total:totJ,cible:info.cible,sel:nsel};
+}
+
+
+/* ===== ONGLET NUTRITION ===== */
+function nutritionTab(c,editable){
+  const n=c.nutrition||{};
+  const ninfo=nutriInfo(c);
+  const form=editable?`
+    <div class="panel" style="margin-bottom:12px"><div class="ph">Profil nutritionnel</div>
+      <div class="r2">
+        <label class="fld"><span>Sexe</span><select data-nut="sexe"><option value="">—</option><option value="H" ${n.sexe==="H"?"selected":""}>Homme</option><option value="F" ${n.sexe==="F"?"selected":""}>Femme</option></select></label>
+        <label class="fld"><span>Âge</span><input type="number" min="12" max="99" data-nut="age" value="${n.age||""}" placeholder="35"></label>
+      </div>
+      <div class="r2">
+        <label class="fld"><span>Activité</span><select data-nut="activite"><option value="">—</option>${ACTIVITES.map(a=>`<option value="${a[0]}" ${n.activite===a[0]?"selected":""}>${a[1]}</option>`).join("")}</select></label>
+        <label class="fld"><span>Objectif</span><select data-nut="objectif"><option value="">—</option>${OBJ_NUT.map(o=>`<option value="${o[0]}" ${n.objectif===o[0]?"selected":""}>${o[1]}</option>`).join("")}</select></label>
+      </div>
+      ${!ninfo?`<p class="muted" style="font-size:12.5px">Renseigne sexe, âge, activité et objectif + un poids et une taille (onglet Bilan) : le plan se calcule automatiquement.</p>`:""}
+    </div>`:"";
+  if(!ninfo){
+    return form+(!editable?`<p class="muted">Votre plan nutritionnel apparaîtra ici dès que votre coach aura complété votre profil.</p>`:"");
+  }
+  const kcalCard=`
+    <div class="pstats">
+      <div class="pstat"><div class="pv">${ninfo.tdee}</div><div class="pl">Maintenance kcal</div></div>
+      <div class="pstat target"><div class="pv">${ninfo.cible}</div><div class="pl">Cible kcal/jour</div></div>
+    </div>
+    <div class="panel" style="margin-bottom:12px">
+      <div style="display:flex;gap:8px;text-align:center">
+        <div style="flex:1"><div style="font-family:'Bebas Neue';font-size:20px;color:var(--red)">${ninfo.prot_g} g</div><div style="font-size:10px;color:var(--grey2);text-transform:uppercase;letter-spacing:.06em">Protéines</div></div>
+        <div style="flex:1"><div style="font-family:'Bebas Neue';font-size:20px;color:var(--amber)">${ninfo.lip_g} g</div><div style="font-size:10px;color:var(--grey2);text-transform:uppercase;letter-spacing:.06em">Lipides</div></div>
+        <div style="flex:1"><div style="font-family:'Bebas Neue';font-size:20px;color:#4CAF50">${ninfo.gluc_g} g</div><div style="font-size:10px;color:var(--grey2);text-transform:uppercase;letter-spacing:.06em">Glucides</div></div>
+      </div>
+    </div>`;
+  const plan=nutriMenu(c);
+  const menuSel=editable?`
+    <div class="r2" style="margin-bottom:10px">
+      <label class="fld" style="margin-bottom:0"><span>Journée type</span><select data-nut="menu">${MENUS.map((m2,i)=>`<option value="${i+1}" ${plan.sel===i+1?"selected":""}>${m2.nom}</option>`).join("")}</select></label>
+    </div>`:`<p style="font-size:13px;color:var(--grey);margin-bottom:10px">${esc(plan.nom)}</p>`;
+  const repasHtml=plan.repas.map(r2=>`
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span class="exn" style="font-size:15px">${esc(r2.t)}</span>
+        <span style="color:var(--amber);font-family:'Bebas Neue';font-size:16px;letter-spacing:.04em">≈ ${r2.tot} kcal</span>
+      </div>
+      ${r2.items.map(it=>`<div style="display:flex;justify-content:space-between;font-size:13.5px;color:var(--white2);padding:4px 0;border-bottom:1px solid var(--line)">
+        <span>${esc(it.label)}</span><span style="color:var(--grey2)">${it.kcal} kcal</span>
+      </div>`).join("")}
+    </div>`).join("");
+  const totalLine=`<div class="panel" style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">
+    <span style="font-size:14px;color:var(--white)">Total de la journée</span>
+    <span style="font-family:'Bebas Neue';font-size:22px;color:${Math.abs(plan.total-plan.cible)<=120?'#4CAF50':'var(--amber)'}">≈ ${plan.total} / ${plan.cible} kcal</span>
+  </div>`;
+  const swaps=`<div class="panel" style="margin-bottom:12px">
+    <div class="ph" style="font-size:13px">Équivalences libres</div>
+    <p style="font-size:13px;color:var(--white2);line-height:1.5">Poulet ↔ dinde ↔ poisson blanc ↔ tofu · Riz ↔ pâtes ↔ quinoa ↔ semoule · Amandes ↔ noix ↔ noisettes · Skyr ↔ fromage blanc · Légumes : variez à volonté.</p>
+  </div>`;
+  const reperes=`<div class="panel" style="margin-bottom:12px">
+    <div class="ph" style="font-size:13px">Repères au quotidien</div>
+    ${nutriReperes(ninfo.objectif).map(r2=>`<div style="font-size:13px;color:var(--white2);padding:3px 0;border-bottom:1px solid var(--line)">• ${r2}</div>`).join("")}
+    <p class="muted" style="font-size:11px;margin-top:10px">Exemple de journée à titre indicatif (base Mifflin-St Jeor), à adapter selon les goûts — ne remplace pas une consultation diététique.</p>
+  </div>`;
+  return form+kcalCard+`<div class="sec-head"><h2 style="font-size:16px;color:var(--red)">Journée type — ${plan.cible} kcal</h2></div>`+menuSel+repasHtml+totalLine+swaps+reperes;
+}
+
 /* ===== BILAN ===== */
 /* génère le HTML imprimable du bilan */
 function bilanPrintHTML(c){
@@ -1292,39 +1406,8 @@ function bilanTab(c,editable){
       ${editable?`<button class="x" data-act="del-bilan" data-idx="${idx}">×</button>`:""}</div>`;
   }).join("");
 
-  const n=c.nutrition||{};
-  const ninfo=nutriInfo(c);
-  const nutForm=editable?`
-    <div class="panel" style="margin-bottom:12px"><div class="ph">Profil nutritionnel</div>
-      <div class="r2">
-        <label class="fld"><span>Sexe</span><select data-nut="sexe"><option value="">—</option><option value="H" ${n.sexe==="H"?"selected":""}>Homme</option><option value="F" ${n.sexe==="F"?"selected":""}>Femme</option></select></label>
-        <label class="fld"><span>Âge</span><input type="number" min="12" max="99" data-nut="age" value="${n.age||""}" placeholder="35"></label>
-      </div>
-      <div class="r2">
-        <label class="fld"><span>Activité</span><select data-nut="activite"><option value="">—</option>${ACTIVITES.map(a=>`<option value="${a[0]}" ${n.activite===a[0]?"selected":""}>${a[1]}</option>`).join("")}</select></label>
-        <label class="fld"><span>Objectif</span><select data-nut="objectif"><option value="">—</option>${OBJ_NUT.map(o=>`<option value="${o[0]}" ${n.objectif===o[0]?"selected":""}>${o[1]}</option>`).join("")}</select></label>
-      </div>
-      ${!ninfo?`<p class="muted" style="font-size:12.5px">Renseigne sexe, âge, activité, objectif + un poids et une taille (bilan) pour le calcul automatique.</p>`:""}
-    </div>`:"";
-  const nutCard=ninfo?`
-    <div class="pstats">
-      <div class="pstat"><div class="pv">${ninfo.tdee}</div><div class="pl">Maintenance kcal</div></div>
-      <div class="pstat target"><div class="pv">${ninfo.cible}</div><div class="pl">Cible kcal/jour</div></div>
-    </div>
-    <div class="panel" style="margin-bottom:12px">
-      <div style="display:flex;gap:8px;text-align:center;margin-bottom:10px">
-        <div style="flex:1"><div style="font-family:'Bebas Neue';font-size:20px;color:var(--red)">${ninfo.prot_g} g</div><div style="font-size:10px;color:var(--grey2);text-transform:uppercase;letter-spacing:.06em">Protéines</div></div>
-        <div style="flex:1"><div style="font-family:'Bebas Neue';font-size:20px;color:var(--amber)">${ninfo.lip_g} g</div><div style="font-size:10px;color:var(--grey2);text-transform:uppercase;letter-spacing:.06em">Lipides</div></div>
-        <div style="flex:1"><div style="font-family:'Bebas Neue';font-size:20px;color:#4CAF50">${ninfo.gluc_g} g</div><div style="font-size:10px;color:var(--grey2);text-transform:uppercase;letter-spacing:.06em">Glucides</div></div>
-      </div>
-      <div class="ph" style="font-size:13px">Repères au quotidien</div>
-      ${nutriReperes(ninfo.objectif).map(r2=>`<div style="font-size:13px;color:var(--white2);padding:3px 0;border-bottom:1px solid var(--line)">• ${r2}</div>`).join("")}
-      <p class="muted" style="font-size:11px;margin-top:10px">Estimation indicative (Mifflin-St Jeor) et repères généraux d'équilibre alimentaire — ne remplace pas une consultation diététique.</p>
-    </div>`:"";
-  const nutSection=`<div class="sec-head" style="margin-top:16px"><h2 style="font-size:16px">Nutrition</h2></div>`+nutForm+nutCard+(!editable&&!ninfo?`<p class="muted" style="margin-bottom:12px">Repères nutritionnels à venir — votre coach complète votre profil.</p>`:"");
   const printBtn=(editable&&bilans.length)?`<button class="btn g full" style="margin-bottom:14px" data-act="print-bilan">🖨 Imprimer / PDF le bilan</button>`:"";
   return imcCard+form+printBtn+(rows||`<p class="muted" style="margin-bottom:14px">Aucun bilan enregistré.</p>`)
-    +nutSection
     +`<div class="sec-head" style="margin-top:18px"><h2 style="font-size:16px">Photos</h2></div>`
     +photosTab(c,editable);
 }
@@ -1597,7 +1680,7 @@ document.addEventListener("change",e=>{
   if(nut){ const c=sel(); if(!c) return;
     c.nutrition=c.nutrition||{};
     const k=nut.dataset.nut;
-    c.nutrition[k]=k==="age"?(parseInt(nut.value)||null):(nut.value||null);
+    c.nutrition[k]=(k==="age"||k==="menu")?(parseInt(nut.value)||null):(nut.value||null);
     save(); render(); return; }
   if(e.target.id==="msg-photo" && e.target.files && e.target.files[0]){
     const role=e.target.dataset.role||"coach";
