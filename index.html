@@ -164,6 +164,12 @@
   .tmr{background:var(--ink2);border:1px solid #4A3B32;color:var(--amber);border-radius:999px;padding:4px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter'}
   .tmr.run{background:var(--red);border-color:var(--red);color:#fff;animation:tpulse 1s ease-in-out infinite}
   @keyframes tpulse{0%,100%{opacity:1}50%{opacity:.75}}
+  /* mode séance */
+  #wk{position:fixed;inset:0;z-index:150;background:radial-gradient(900px 600px at 50% -10%, rgba(176,31,31,.15), transparent 60%),var(--ink);display:flex}
+  .wk-in{flex:1;display:flex;flex-direction:column;align-items:center;padding:18px 20px calc(18px + env(safe-area-inset-bottom));max-width:480px;margin:0 auto;width:100%}
+  .wk-dot{display:inline-block;width:13px;height:13px;border-radius:999px;background:var(--ink2);border:1.5px solid var(--line);margin:0 4px}
+  .wk-dot.d{background:var(--red);border-color:var(--red)}
+  .wk-dot.cur{border-color:var(--amber)}
   /* splash */
   #splash{position:fixed;inset:0;background:#0D0B0A;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;transition:opacity .5s ease}
   #splash.out{opacity:0;pointer-events:none}
@@ -333,7 +339,7 @@ window.supabase={
 </script>
 <script>
 "use strict";
-const APP_VERSION="v2.3 — 16/07/2026";
+const APP_VERSION="v2.4 — 16/07/2026";
 const SUPA_URL="https://xjmelkqtropownhfmuuh.supabase.co";
 const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqbWVsa3F0cm9wb3duaGZtdXVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3MDI3MTYsImV4cCI6MjA5OTI3ODcxNn0.mYoJx96xZ9SBaGky9EN8_MoTuSy7BY5D_aGB7JIFQyg";
 
@@ -412,6 +418,7 @@ function isTypingOrRecording(){
   const ta=document.getElementById("msg-text");
   if(ta && (document.activeElement===ta || ta.value.trim())) return true;
   if(typeof REC!=="undefined" && REC.rec && REC.rec.state==="recording") return true;
+  if(typeof WK!=="undefined" && WK.on) return true;
   return false;
 }
 async function reloadKeepingView(){
@@ -770,7 +777,7 @@ function programme(c,editable){
     list=prog.map(exCard).join("");
   } else {
     list=blocKeys.map(b=>`
-      ${b?`<div class="sec-head" style="margin-top:8px"><h2 style="font-size:16px;color:var(--red)">${b.length<=2?`Séance ${b}`:b}</h2></div>`:`<div class="sec-head" style="margin-top:8px"><h2 style="font-size:16px;color:var(--grey)">Autres exercices</h2></div>`}
+      ${b?`<div class="sec-head" style="margin-top:8px"><h2 style="font-size:16px;color:var(--red)">${b.length<=2?`Séance ${b}`:b}</h2><button class="link" style="font-size:13px" data-act="start-wk" data-jour="${esc(b)}">▶ Lancer la séance</button></div>`:`<div class="sec-head" style="margin-top:8px"><h2 style="font-size:16px;color:var(--grey)">Autres exercices</h2></div>`}
       ${blocs[b].map(exCard).join("")}`).join("");
   }
   const form=editable?`
@@ -872,6 +879,109 @@ function addModal(){
 
 
 
+
+/* ===== MODE SÉANCE GUIDÉ ===== */
+const WK={on:false,c:null,jour:"",exos:[],idx:0,serie:1,rest:0,restInt:null};
+function openWorkout(jour){
+  const c=sel(); if(!c) return;
+  const exos=(c.program||[]).filter(e=>(e.bloc||"")===jour);
+  if(!exos.length) return;
+  stopTimer();
+  WK.on=true; WK.c=c; WK.jour=jour; WK.exos=exos; WK.idx=0; WK.serie=1; WK.rest=0;
+  let ov=document.getElementById("wk");
+  if(!ov){ ov=document.createElement("div"); ov.id="wk"; document.body.appendChild(ov); }
+  wkRender();
+}
+function closeWorkout(force){
+  if(!force && !confirm("Quitter la séance en cours ?")) return;
+  if(WK.restInt){ clearInterval(WK.restInt); WK.restInt=null; }
+  WK.on=false;
+  const ov=document.getElementById("wk"); if(ov) ov.remove();
+}
+function wkSerieDone(){
+  const ex=WK.exos[WK.idx];
+  const lastSerie=WK.serie>=(ex.series||1);
+  const lastExo=WK.idx>=WK.exos.length-1;
+  if(lastSerie&&lastExo){ wkFinish(); return; }
+  if(lastSerie){ WK.idx++; WK.serie=1; } else { WK.serie++; }
+  const secs=parseRepos(ex.repos)||60;
+  wkStartRest(secs);
+}
+function wkStartRest(secs){
+  if(WK.restInt) clearInterval(WK.restInt);
+  WK.rest=secs; wkRender();
+  WK.restInt=setInterval(()=>{
+    WK.rest--;
+    const el=document.getElementById("wk-rest-n");
+    if(el) el.textContent=Math.floor(WK.rest/60)+":"+String(WK.rest%60).padStart(2,"0");
+    if(WK.rest<=0){
+      clearInterval(WK.restInt); WK.restInt=null;
+      alarm(4); WK.rest=0; wkRender();
+    }
+  },1000);
+}
+function wkSkipRest(){
+  if(WK.restInt){ clearInterval(WK.restInt); WK.restInt=null; }
+  WK.rest=0; wkRender();
+}
+function wkFinish(){
+  if(WK.restInt){ clearInterval(WK.restInt); WK.restInt=null; }
+  const c=WK.c;
+  c.seances=c.seances||[];
+  c.seances.push({date:today(),fait:true,ressenti:"",note:"Séance "+WK.jour+" — mode guidé ("+WK.exos.length+" exercices)"});
+  save();
+  const ov=document.getElementById("wk");
+  if(ov) ov.innerHTML=`<div class="wk-in" style="justify-content:center;text-align:center">
+    <div style="font-size:64px">💪</div>
+    <h2 style="font-family:'Bebas Neue';font-size:34px;letter-spacing:.05em;color:var(--white);margin:10px 0 4px">Séance terminée !</h2>
+    <p style="color:var(--grey);margin-bottom:6px">${esc(WK.jour)} · ${WK.exos.length} exercices — bien joué.</p>
+    <p style="color:var(--grey2);font-size:13px;margin-bottom:22px">La séance a été enregistrée automatiquement.</p>
+    <button class="btn p full" data-act="wk-close-force" style="max-width:280px">Fermer</button>
+  </div>`;
+  alarm(3);
+  WK.on=false;
+  render();
+}
+function wkRender(){
+  const ov=document.getElementById("wk"); if(!ov||!WK.on) return;
+  const ex=WK.exos[WK.idx];
+  const total=ex.series||1;
+  const dots=Array.from({length:total},(_,i)=>`<span class="wk-dot ${i<WK.serie-1?'d':''} ${i===WK.serie-1?'cur':''}"></span>`).join("");
+  const hist=(ex.historique||[]).slice(-1)[0];
+  if(WK.rest>0){
+    ov.innerHTML=`<div class="wk-in" style="justify-content:center;text-align:center">
+      <p style="color:var(--amber);font-family:'Bebas Neue';font-size:18px;letter-spacing:.2em">REPOS</p>
+      <div id="wk-rest-n" style="font-family:'Bebas Neue';font-size:96px;color:var(--white);line-height:1">${Math.floor(WK.rest/60)}:${String(WK.rest%60).padStart(2,"0")}</div>
+      <p style="color:var(--grey);margin:14px 0 26px">Ensuite : <b style="color:var(--white)">${esc(ex.nom)}</b> — série ${WK.serie}/${total}</p>
+      <button class="btn g full" data-act="wk-skip" style="max-width:280px">Passer le repos ›</button>
+      <button class="link" data-act="wk-close" style="margin-top:18px">Quitter la séance</button>
+    </div>`;
+    return;
+  }
+  ov.innerHTML=`<div class="wk-in">
+    <div style="display:flex;justify-content:space-between;align-items:center;width:100%">
+      <span style="color:var(--grey);font-size:13px">${esc(WK.jour)} · Exercice ${WK.idx+1}/${WK.exos.length}</span>
+      <button class="x" data-act="wk-close" style="font-size:22px">×</button>
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;text-align:center;width:100%">
+      <h2 style="font-family:'Bebas Neue';font-size:34px;letter-spacing:.04em;color:var(--white);line-height:1.1;margin-bottom:6px">${esc(ex.nom)}</h2>
+      ${ex.rir?`<span class="tag ink" style="align-self:center;margin-bottom:12px">RIR ${esc(ex.rir)}</span>`:""}
+      <div style="margin:8px 0 6px">${dots}</div>
+      <p style="color:var(--amber);font-family:'Bebas Neue';font-size:22px;letter-spacing:.08em">SÉRIE ${WK.serie} / ${total}</p>
+      <p style="color:var(--white);font-size:26px;font-weight:800;margin:6px 0">${esc(ex.reps||"—")} reps${ex.charge?` · ${esc(ex.charge)}`:""}</p>
+      ${hist?`<p style="color:#4CAF50;font-size:13px">Dernière fois : ${esc(hist.charge)} (${frDate(hist.date)})</p>`:""}
+      ${ex.note?`<p style="color:var(--grey);font-size:13.5px;margin-top:10px;font-style:italic">${esc(ex.note)}</p>`:""}
+      ${ex.alt?`<p style="color:var(--amber);font-size:13px;margin-top:8px">↔ Trop difficile ? ${esc(ex.alt)}</p>`:""}
+      <button class="link" data-act="wk-charge" style="margin-top:14px;font-size:13px">+ Noter la charge du jour</button>
+    </div>
+    <button class="btn p full" data-act="wk-done" style="padding:16px;font-size:17px">✓ Série faite${parseRepos(ex.repos)?` — repos ${esc(ex.repos)}`:""}</button>
+    <div style="display:flex;justify-content:space-between;width:100%;margin-top:10px">
+      <button class="link" data-act="wk-prev" ${WK.idx===0&&WK.serie===1?'style="visibility:hidden"':''}>‹ Précédent</button>
+      <button class="link" data-act="wk-next" ${WK.idx>=WK.exos.length-1?'style="visibility:hidden"':''}>Exercice suivant ›</button>
+    </div>
+  </div>`;
+}
+
 /* ===== TIMER DE REPOS ===== */
 const TIMER={int:null,exId:null};
 function parseRepos(txt){
@@ -885,18 +995,31 @@ function parseRepos(txt){
   if(t.includes("min")||t.includes("mn")||t.includes("'")) return Math.round(v*60);
   return Math.round(v); // secondes par défaut
 }
-function beep(){
+let AC=null;
+function unlockAudio(){
   try{
-    const ctx=new (window.AudioContext||window.webkitAudioContext)();
-    [0,0.35].forEach(dt=>{
-      const o=ctx.createOscillator(), g=ctx.createGain();
-      o.connect(g); g.connect(ctx.destination);
-      o.frequency.value=880; g.gain.setValueAtTime(0.25,ctx.currentTime+dt);
-      g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+dt+0.28);
-      o.start(ctx.currentTime+dt); o.stop(ctx.currentTime+dt+0.3);
-    });
+    if(!AC) AC=new (window.AudioContext||window.webkitAudioContext)();
+    if(AC.state==="suspended") AC.resume();
   }catch(e){}
-  try{ if(navigator.vibrate) navigator.vibrate([250,120,250]); }catch(e){}
+}
+function beep(){ alarm(2); }
+function alarm(reps){
+  reps=reps||4;
+  try{
+    unlockAudio(); if(!AC) return;
+    for(let i=0;i<reps;i++){
+      const t0=AC.currentTime+i*0.45;
+      const o=AC.createOscillator(), g=AC.createGain();
+      o.connect(g); g.connect(AC.destination);
+      o.type="square";
+      o.frequency.setValueAtTime(i%2?660:880,t0);
+      g.gain.setValueAtTime(0.0001,t0);
+      g.gain.exponentialRampToValueAtTime(0.5,t0+0.02);
+      g.gain.exponentialRampToValueAtTime(0.001,t0+0.38);
+      o.start(t0); o.stop(t0+0.4);
+    }
+  }catch(e){}
+  try{ if(navigator.vibrate) navigator.vibrate([300,150,300,150,400]); }catch(e){}
 }
 function stopTimer(){
   if(TIMER.int){ clearInterval(TIMER.int); TIMER.int=null; }
@@ -1220,6 +1343,7 @@ function deleteSelected(){
 
 /* ===== events ===== */
 document.addEventListener("click",e=>{
+  unlockAudio();
   const t=e.target.closest("[data-act]"); if(!t) return;
   const a=t.dataset.act, c=sel();
   switch(a){
@@ -1301,6 +1425,18 @@ document.addEventListener("click",e=>{
       });
       break; }
     case "timer": startTimer(t.dataset.id, +t.dataset.secs||60); break;
+    case "start-wk": openWorkout(t.dataset.jour); break;
+    case "wk-done": wkSerieDone(); break;
+    case "wk-skip": wkSkipRest(); break;
+    case "wk-close": closeWorkout(false); break;
+    case "wk-close-force": closeWorkout(true); break;
+    case "wk-prev": if(WK.on){ if(WK.serie>1){WK.serie--;} else if(WK.idx>0){WK.idx--; WK.serie=WK.exos[WK.idx].series||1;} wkSkipRest(); } break;
+    case "wk-next": if(WK.on&&WK.idx<WK.exos.length-1){ WK.idx++; WK.serie=1; wkSkipRest(); } break;
+    case "wk-charge":{ if(!WK.on) break;
+      const ex=WK.exos[WK.idx];
+      const v=prompt(`Charge du jour pour « ${ex.nom} » ?`, ex.historique&&ex.historique.length?ex.historique[ex.historique.length-1].charge:"");
+      if(v&&v.trim()){ ex.historique=ex.historique||[]; ex.historique.push({date:today(),charge:v.trim()}); if(ex.historique.length>20)ex.historique=ex.historique.slice(-20); save(); wkRender(); }
+      break; }
     case "log-charge":{ if(!c) return;
       const ex=(c.program||[]).find(x=>x.id===t.dataset.id); if(!ex) return;
       const v=prompt(`Charge du jour pour « ${ex.nom} » ?\n(ex : 45 kg, 12 reps à 40 kg…)`, ex.historique&&ex.historique.length?ex.historique[ex.historique.length-1].charge:"");
