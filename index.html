@@ -88,7 +88,8 @@
   .tabbar button.on{background:var(--red);color:#fff}
   .fld{display:block;margin-bottom:12px}
   .fld span{display:block;font-size:11px;font-weight:700;color:var(--grey2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.06em}
-  .fld input,.fld select,.fld textarea{width:100%;border:1px solid var(--line);border-radius:12px;padding:10px 13px;font-size:15px;background:var(--ink2);color:var(--white);outline:none;font-family:'Inter'}
+  .fld input,.fld select,.fld textarea{width:100%;min-width:0;border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:16px;background:var(--ink2);color:var(--white);outline:none;font-family:'Inter';-webkit-appearance:none;appearance:none}
+  input[type="date"],input[type="datetime-local"]{min-width:0;max-width:100%}
   .fld input:focus,.fld select:focus,.fld textarea:focus{border-color:var(--red)}
   .fld textarea{resize:vertical}
   .panel{background:var(--ink2);border:1px solid var(--line);border-radius:16px;padding:14px}
@@ -136,9 +137,7 @@
   .wrap{overflow-x:clip}
   img,svg,audio,video{max-width:100%}
   .r2>*,.msg-input>*,.hd-top>*,.pstats>*,.crow>*{min-width:0}
-  .tabbar{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
-  .tabbar::-webkit-scrollbar{display:none}
-  .tabbar button{flex:1 0 auto;padding:8px 12px;white-space:nowrap}
+  .tabbar button{flex:1 1 0;padding:8px 2px;white-space:nowrap;font-size:10.5px;letter-spacing:.02em;overflow:hidden;text-overflow:ellipsis}
   .pstat .pv{font-size:19px;white-space:nowrap}
   .pstat{padding:10px 8px}
   .msg{overflow-wrap:anywhere}
@@ -184,7 +183,7 @@
   .msg.client{align-self:flex-start;background:var(--ink2);color:var(--white2);border-bottom-left-radius:4px}
   .msg .mt{font-size:10px;opacity:.6;margin-top:3px;text-align:right}
   .msg-input{display:flex;gap:8px;align-items:flex-end}
-  .msg-input textarea{flex:1;border:1px solid var(--line);border-radius:12px;padding:9px 12px;font-size:14px;background:var(--ink2);color:var(--white);outline:none;font-family:'Inter';resize:none;min-height:42px;max-height:100px}
+  .msg-input textarea{flex:1;border:1px solid var(--line);border-radius:12px;padding:9px 12px;font-size:16px;background:var(--ink2);color:var(--white);outline:none;font-family:'Inter';resize:none;min-height:42px;max-height:100px}
   .msg-input textarea:focus{border-color:var(--red)}
   /* objectif chiffré */
   .obj-bar{background:var(--ink2);border-radius:999px;height:8px;margin:8px 0 4px;overflow:hidden}
@@ -638,7 +637,7 @@ function emptyClients(){
 }
 function detail(c){
   if(!c)return"";
-  const tabs=[["infos","Infos"],["programme","Programme"],["progres","Progrès"],["seances","Séances"],["messages","Messages"],["bilan","Bilan"]];
+  const tabs=[["infos","Infos"],["programme","Prog."],["progres","Progrès"],["seances","Séances"],["messages","Msg"],["bilan","Bilan"]];
   const tabbar=tabs.map(([k,l])=>`<button data-act="dtab" data-dtab="${k}" class="${S.detailTab===k?'on':''}">${l}</button>`).join("");
   let inner=S.detailTab==="infos"?infosTab(c):S.detailTab==="programme"?programme(c,true):S.detailTab==="progres"?progres(c,true):S.detailTab==="messages"?messagesTab(c,true):S.detailTab==="bilan"?bilanTab(c,true):seancesTab(c,true);
   return `<button class="back" data-act="back">‹ Clients</button>
@@ -813,7 +812,7 @@ function clientSpace(c){
       ${r!==null?`<span>Séances restantes : <b>${r}</b></span>`:''}
       ${rdv&&rdv>=new Date(Date.now()-3600*1000)?`<span>Prochain RDV : <b>${rdv.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})} ${rdv.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</b></span>`:''}
     </div>`:''}</div>`;
-  let inner=S.clientTab==="programme"?programme(c,false):S.clientTab==="progres"?progres(c,true):S.clientTab==="messages"?messagesTab(c,false):S.clientTab==="bilan"?bilanTab(c,true):seancesTab(c,true);
+  let inner=S.clientTab==="programme"?programme(c,false):S.clientTab==="progres"?progres(c,true):S.clientTab==="messages"?messagesTab(c,false):S.clientTab==="bilan"?bilanTab(c,false):seancesTab(c,true);
   return banner+inner;
 }
 function addModal(){
