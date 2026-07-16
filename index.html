@@ -339,7 +339,7 @@ window.supabase={
 </script>
 <script>
 "use strict";
-const APP_VERSION="v2.6 — 16/07/2026";
+const APP_VERSION="v2.7 — 16/07/2026";
 const SUPA_URL="https://xjmelkqtropownhfmuuh.supabase.co";
 const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqbWVsa3F0cm9wb3duaGZtdXVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3MDI3MTYsImV4cCI6MjA5OTI3ODcxNn0.mYoJx96xZ9SBaGky9EN8_MoTuSy7BY5D_aGB7JIFQyg";
 
@@ -1161,25 +1161,43 @@ function inviteMailto(c){
 /* ===== NUTRITION (estimation Mifflin-St Jeor + repères généraux) ===== */
 const ACTIVITES=[["sedentaire","Sédentaire (bureau, peu de sport)",1.2],["leger","Légèrement actif (1-2 séances/sem)",1.375],["modere","Modérément actif (3-4 séances/sem)",1.55],["actif","Très actif (5-6 séances/sem)",1.725],["intense","Extrêmement actif (physique + sport quotidien)",1.9]];
 const OBJ_NUT=[["perte","Perte de poids"],["maintien","Maintien / recomposition"],["prise","Prise de masse"]];
+const RYTHMES=[["progressif","Progressif (confort, long terme)"],["standard","Standard (recommandé)"],["rapide","Rapide (court terme, encadré)"]];
 function nutriInfo(c){
   const n=c.nutrition||{};
   const ms=(c.mesures||[]).filter(m=>typeof m.poids==="number");
   const poids=ms.length?ms[ms.length-1].poids:null;
   const taille=c.tailleCm;
   if(!n.sexe||!n.age||!n.activite||!n.objectif||!poids||!taille) return null;
+  // 1. Métabolisme de base — Mifflin-St Jeor (référence clinique)
   const bmr=Math.round(10*poids+6.25*taille-5*n.age+(n.sexe==="H"?5:-161));
   const act=ACTIVITES.find(a=>a[0]===n.activite);
   const tdee=Math.round(bmr*(act?act[2]:1.55));
-  let cible=tdee;
-  if(n.objectif==="perte") cible=Math.round(tdee*0.85);
-  if(n.objectif==="prise") cible=Math.round(tdee*1.10);
-  // plancher de sécurité
+  // 2. Ajustement en kcal ABSOLUES bornées (pas un simple %) selon le rythme choisi
+  const rythme=n.rythme||"standard";
+  const R={
+    perte:{progressif:[0.10,250,450],standard:[0.175,350,650],rapide:[0.25,500,900]},
+    prise:{progressif:[0.07,150,300],standard:[0.12,250,450],rapide:[0.18,400,700]}
+  };
+  let delta=0;
+  if(n.objectif==="perte"){ const[p,mn,mx]=R.perte[rythme]||R.perte.standard; delta=-Math.round(Math.min(mx,Math.max(mn,tdee*p))); }
+  if(n.objectif==="prise"){ const[p,mn,mx]=R.prise[rythme]||R.prise.standard; delta=Math.round(Math.min(mx,Math.max(mn,tdee*p))); }
+  let cible=tdee+delta;
+  // 3. Plancher de sécurité clinique
   const plancher=n.sexe==="H"?1500:1200;
-  if(cible<plancher) cible=plancher;
-  const prot_g=Math.round(poids*(n.objectif==="perte"?2.0:1.8));
-  const lip_g=Math.round(poids*1.0);
+  let floored=false;
+  if(cible<plancher){ cible=plancher; floored=true; delta=cible-tdee; }
+  // 4. Rythme de variation estimé (7700 kcal ≈ 1 kg)
+  const rate=+(Math.abs(delta)*7/7700).toFixed(2);
+  // 5. Macros pro : protéines g/kg selon phase (ISSN), lipides 27,5% kcal (plancher 0,6 g/kg), glucides = solde
+  const gkg=n.objectif==="perte"?2.2:n.objectif==="prise"?2.0:1.8;
+  const prot_g=Math.min(230,Math.round(poids*gkg));
+  let lip_g=Math.round(cible*0.275/9);
+  const lipMin=Math.round(poids*0.6);
+  if(lip_g<lipMin) lip_g=lipMin;
   const gluc_g=Math.max(0,Math.round((cible-prot_g*4-lip_g*9)/4));
-  return {bmr,tdee,cible,prot_g,lip_g,gluc_g,objectif:n.objectif};
+  const pctP=Math.round(prot_g*4/cible*100), pctL=Math.round(lip_g*9/cible*100);
+  const pctG=Math.max(0,100-pctP-pctL);
+  return {bmr,tdee,cible,delta,rate,floored,prot_g,lip_g,gluc_g,pctP,pctL,pctG,gkg,objectif:n.objectif,rythme};
 }
 function nutriReperes(obj){
   const communs=["De l'eau tout au long de la journée (1,5 à 2 L)","Des légumes à chaque repas (la moitié de l'assiette)","Une source de protéines à chaque repas, répartie sur la journée","Féculents complets plutôt que raffinés","Limiter les produits ultra-transformés et les boissons sucrées"];
@@ -1254,21 +1272,26 @@ function nutritionTab(c,editable){
         <label class="fld"><span>Activité</span><select data-nut="activite"><option value="">—</option>${ACTIVITES.map(a=>`<option value="${a[0]}" ${n.activite===a[0]?"selected":""}>${a[1]}</option>`).join("")}</select></label>
         <label class="fld"><span>Objectif</span><select data-nut="objectif"><option value="">—</option>${OBJ_NUT.map(o=>`<option value="${o[0]}" ${n.objectif===o[0]?"selected":""}>${o[1]}</option>`).join("")}</select></label>
       </div>
+      ${(n.objectif==="perte"||n.objectif==="prise")?`<label class="fld"><span>Rythme</span><select data-nut="rythme">${RYTHMES.map(r2=>`<option value="${r2[0]}" ${(n.rythme||"standard")===r2[0]?"selected":""}>${r2[1]}</option>`).join("")}</select></label>`:""}
       ${!ninfo?`<p class="muted" style="font-size:12.5px">Renseigne sexe, âge, activité et objectif + un poids et une taille (onglet Bilan) : le plan se calcule automatiquement.</p>`:""}
     </div>`:"";
   if(!ninfo){
     return form+(!editable?`<p class="muted">Votre plan nutritionnel apparaîtra ici dès que votre coach aura complété votre profil.</p>`:"");
   }
+  const deltaTxt=ninfo.delta===0?"Maintien calorique":(ninfo.delta<0?`Déficit ${Math.abs(ninfo.delta)} kcal/j ≈ −${String(ninfo.rate).replace(".",",")} kg/sem`:`Surplus +${ninfo.delta} kcal/j ≈ +${String(ninfo.rate).replace(".",",")} kg/sem`);
   const kcalCard=`
     <div class="pstats">
-      <div class="pstat"><div class="pv">${ninfo.tdee}</div><div class="pl">Maintenance kcal</div></div>
-      <div class="pstat target"><div class="pv">${ninfo.cible}</div><div class="pl">Cible kcal/jour</div></div>
+      <div class="pstat"><div class="pv">${ninfo.bmr}</div><div class="pl">Métabolisme base</div></div>
+      <div class="pstat"><div class="pv">${ninfo.tdee}</div><div class="pl">Maintenance</div></div>
+      <div class="pstat target"><div class="pv">${ninfo.cible}</div><div class="pl">Cible kcal/j</div></div>
     </div>
     <div class="panel" style="margin-bottom:12px">
+      <div style="text-align:center;font-size:13.5px;color:${ninfo.delta<0?'var(--amber)':ninfo.delta>0?'#4CAF50':'var(--grey)'};font-weight:700;margin-bottom:10px">${deltaTxt}</div>
+      ${ninfo.floored?`<div class="badge-warn" style="display:block;text-align:center;margin-bottom:10px">⚠ Cible relevée au plancher de sécurité — rythme choisi trop agressif pour ce profil</div>`:""}
       <div style="display:flex;gap:8px;text-align:center">
-        <div style="flex:1"><div style="font-family:'Bebas Neue';font-size:20px;color:var(--red)">${ninfo.prot_g} g</div><div style="font-size:10px;color:var(--grey2);text-transform:uppercase;letter-spacing:.06em">Protéines</div></div>
-        <div style="flex:1"><div style="font-family:'Bebas Neue';font-size:20px;color:var(--amber)">${ninfo.lip_g} g</div><div style="font-size:10px;color:var(--grey2);text-transform:uppercase;letter-spacing:.06em">Lipides</div></div>
-        <div style="flex:1"><div style="font-family:'Bebas Neue';font-size:20px;color:#4CAF50">${ninfo.gluc_g} g</div><div style="font-size:10px;color:var(--grey2);text-transform:uppercase;letter-spacing:.06em">Glucides</div></div>
+        <div style="flex:1"><div style="font-family:'Bebas Neue';font-size:20px;color:var(--red)">${ninfo.prot_g} g</div><div style="font-size:10px;color:var(--grey2);text-transform:uppercase;letter-spacing:.06em">Protéines ${ninfo.pctP}%</div><div style="font-size:10px;color:var(--grey2)">${String(ninfo.gkg).replace(".",",")} g/kg</div></div>
+        <div style="flex:1"><div style="font-family:'Bebas Neue';font-size:20px;color:var(--amber)">${ninfo.lip_g} g</div><div style="font-size:10px;color:var(--grey2);text-transform:uppercase;letter-spacing:.06em">Lipides ${ninfo.pctL}%</div></div>
+        <div style="flex:1"><div style="font-family:'Bebas Neue';font-size:20px;color:#4CAF50">${ninfo.gluc_g} g</div><div style="font-size:10px;color:var(--grey2);text-transform:uppercase;letter-spacing:.06em">Glucides ${ninfo.pctG}%</div></div>
       </div>
     </div>`;
   const plan=nutriMenu(c);
@@ -1333,7 +1356,7 @@ function bilanPrintHTML(c){
     ${last.note?`<p style="font-size:13px;color:#555;margin-top:12px"><b>Note :</b> ${esc(last.note)}</p>`:""}
     ${(()=>{const ni=nutriInfo(c);if(!ni)return"";
       return `<div style="background:#F6F1EC;border-radius:8px;padding:12px 14px;margin-top:14px;font-size:13.5px">
-        <b>Repères nutritionnels</b> — Cible : <b>${ni.cible} kcal/jour</b> (maintenance ${ni.tdee} kcal)<br>
+        <b>Repères nutritionnels</b> — Cible : <b>${ni.cible} kcal/jour</b> (maintenance ${ni.tdee} kcal${ni.delta?` · ${ni.delta<0?"déficit "+Math.abs(ni.delta):"surplus +"+ni.delta}kcal ≈ ${ni.delta<0?"−":"+"}${String(ni.rate).replace(".",",")} kg/sem`:""})<br>
         Protéines ${ni.prot_g} g · Lipides ${ni.lip_g} g · Glucides ${ni.gluc_g} g
         <div style="font-size:10.5px;color:#999;margin-top:6px">Estimation indicative (Mifflin-St Jeor) — repères généraux, ne remplace pas une consultation diététique.</div>
       </div>`;})()}
