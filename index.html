@@ -90,6 +90,8 @@
   .fld{display:block;margin-bottom:12px}
   .fld span{display:block;font-size:11px;font-weight:700;color:var(--grey2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.06em}
   .fld input,.fld select,.fld textarea{width:100%;min-width:0;border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:16px;background:var(--ink2);color:var(--white);outline:none;font-family:'Inter';-webkit-appearance:none;appearance:none}
+  .fld select{background-image:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%278%27%3E%3Cpath d=%27M1 1l5 5 5-5%27 stroke=%27%23A39588%27 stroke-width=%272%27 fill=%27none%27 stroke-linecap=%27round%27/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:34px}
+  .pick select{-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%278%27%3E%3Cpath d=%27M1 1l5 5 5-5%27 stroke=%27%23A39588%27 stroke-width=%272%27 fill=%27none%27 stroke-linecap=%27round%27/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:34px}
   input[type="date"],input[type="datetime-local"]{min-width:0;max-width:100%;width:100%;min-height:44px}
   .fld input:focus,.fld select:focus,.fld textarea:focus{border-color:var(--red)}
   .fld textarea{resize:vertical}
@@ -328,6 +330,7 @@ window.supabase={
 </script>
 <script>
 "use strict";
+const APP_VERSION="v2.0 — 16/07/2026";
 const SUPA_URL="https://xjmelkqtropownhfmuuh.supabase.co";
 const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqbWVsa3F0cm9wb3duaGZtdXVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3MDI3MTYsImV4cCI6MjA5OTI3ODcxNn0.mYoJx96xZ9SBaGky9EN8_MoTuSy7BY5D_aGB7JIFQyg";
 
@@ -517,6 +520,7 @@ function authScreen(){
       ?`Déjà un compte ? <button data-act="auth-switch" data-to="login">Se connecter</button>`
       :`Première fois ? <button data-act="auth-switch" data-to="signup">Créer mon accès</button>`}
     </div>
+    <p style="text-align:center;font-size:10.5px;color:var(--grey2);margin-top:14px">${APP_VERSION}</p>
   </div></div>`;
 }
 
@@ -623,6 +627,7 @@ function dashboard(){
         <button class="btn g full" data-act="export">↓ Exporter une sauvegarde</button>
         <button class="btn g full" data-act="logout">Se déconnecter</button>
       </div>
+      <p style="text-align:center;font-size:10.5px;color:var(--grey2);margin-top:10px">${APP_VERSION}</p>
     </div>`;
 }
 function clientList(){
