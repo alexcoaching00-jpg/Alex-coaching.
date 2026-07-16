@@ -339,7 +339,7 @@ window.supabase={
 </script>
 <script>
 "use strict";
-const APP_VERSION="v2.7 — 16/07/2026";
+const APP_VERSION="v2.8 — 16/07/2026";
 const SUPA_URL="https://xjmelkqtropownhfmuuh.supabase.co";
 const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqbWVsa3F0cm9wb3duaGZtdXVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3MDI3MTYsImV4cCI6MjA5OTI3ODcxNn0.mYoJx96xZ9SBaGky9EN8_MoTuSy7BY5D_aGB7JIFQyg";
 
@@ -1216,7 +1216,7 @@ const ALIMENTS={
   poulet:{n:"Blanc de poulet",k:110},steak5:{n:"Steak haché 5%",k:130},thon:{n:"Thon au naturel",k:110},
   saumon:{n:"Saumon",k:200},poisson:{n:"Poisson blanc (cabillaud…)",k:82},
   riz:{n:"Riz (poids cru)",k:350},pates:{n:"Pâtes complètes (poids cru)",k:350},quinoa:{n:"Quinoa (poids cru)",k:368},
-  pdt:{n:"Pommes de terre",k:80},legumes:{n:"Légumes verts",k:30},huile:{n:"Huile d'olive",k:900}
+  pdt:{n:"Pommes de terre",k:80},legumes:{n:"Légumes verts",k:30},huile:{n:"Huile d'olive",k:900},whey:{n:"Whey protéine (shaker)",k:390},caseine:{n:"Caséine (shaker)",k:370}
 };
 const MENUS=[
  {nom:"Journée type 1",repas:[
@@ -1238,8 +1238,21 @@ const MENUS=[
 function nutriMenu(c){
   const info=nutriInfo(c); if(!info) return null;
   const nsel=(c.nutrition&&c.nutrition.menu)||1;
-  const menu=MENUS[Math.min(MENUS.length,Math.max(1,nsel))-1];
-  const kf=info.cible/2000;
+  const base=MENUS[Math.min(MENUS.length,Math.max(1,nsel))-1];
+  const supp=!!(c.nutrition&&c.nutrition.supplements==="oui");
+  // Variante suppléments : collation → shaker whey, + caséine avant le coucher
+  let repasDef=base.repas;
+  if(supp){
+    repasDef=base.repas.map(r2=>r2.t==="Collation"
+      ?{t:"Collation (post-entraînement)",items:[["whey",30],["banane",100]]}
+      :r2);
+    repasDef=repasDef.concat([{t:"Avant le coucher",items:[["caseine",30]]}]);
+  }
+  const menu={nom:base.nom+(supp?" + suppléments":""),repas:repasDef};
+  // Échelle calée sur le total RÉEL de base du menu (plus juste que /2000)
+  const kcalOf=(id,q)=>{const a=ALIMENTS[id];return a.u?a.k*q:a.k*q/100;};
+  const baseTotal=menu.repas.reduce((t,r2)=>t+r2.items.reduce((t2,[id,q])=>t2+kcalOf(id,q),0),0);
+  const kf=info.cible/baseTotal;
   let totJ=0;
   const repas=menu.repas.map(r2=>{
     let tot=0;
@@ -1273,6 +1286,7 @@ function nutritionTab(c,editable){
         <label class="fld"><span>Objectif</span><select data-nut="objectif"><option value="">—</option>${OBJ_NUT.map(o=>`<option value="${o[0]}" ${n.objectif===o[0]?"selected":""}>${o[1]}</option>`).join("")}</select></label>
       </div>
       ${(n.objectif==="perte"||n.objectif==="prise")?`<label class="fld"><span>Rythme</span><select data-nut="rythme">${RYTHMES.map(r2=>`<option value="${r2[0]}" ${(n.rythme||"standard")===r2[0]?"selected":""}>${r2[1]}</option>`).join("")}</select></label>`:""}
+      <label class="fld"><span>Suppléments</span><select data-nut="supplements"><option value="" ${!n.supplements||n.supplements!=="oui"?"selected":""}>Sans (alimentation seule)</option><option value="oui" ${n.supplements==="oui"?"selected":""}>Avec whey & caséine</option></select></label>
       ${!ninfo?`<p class="muted" style="font-size:12.5px">Renseigne sexe, âge, activité et objectif + un poids et une taille (onglet Bilan) : le plan se calcule automatiquement.</p>`:""}
     </div>`:"";
   if(!ninfo){
@@ -1313,7 +1327,17 @@ function nutritionTab(c,editable){
     <span style="font-size:14px;color:var(--white)">Total de la journée</span>
     <span style="font-family:'Bebas Neue';font-size:22px;color:${Math.abs(plan.total-plan.cible)<=120?'#4CAF50':'var(--amber)'}">≈ ${plan.total} / ${plan.cible} kcal</span>
   </div>`;
-  const swaps=`<div class="panel" style="margin-bottom:12px">
+  const suppOn=!!(c.nutrition&&c.nutrition.supplements==="oui");
+  const suppPanel=suppOn?`<div class="panel" style="margin-bottom:12px;border-color:rgba(184,134,47,.35)">
+    <div class="ph" style="font-size:13px;color:var(--amber)">Protocole suppléments</div>
+    <div style="font-size:13px;color:var(--white2);padding:3px 0;border-bottom:1px solid var(--line)">• <b>Whey</b> : 25–30 g dans l'heure autour de l'entraînement (ou en collation les jours off)</div>
+    <div style="font-size:13px;color:var(--white2);padding:3px 0;border-bottom:1px solid var(--line)">• <b>Caséine</b> : 25–30 g avant le coucher (diffusion lente pendant la nuit)</div>
+    <div style="font-size:13px;color:var(--white2);padding:3px 0;border-bottom:1px solid var(--line)">• <b>Créatine monohydrate</b> : 3–5 g/jour, tous les jours, avec un repas — le supplément le mieux prouvé pour la force</div>
+    <div style="font-size:13px;color:var(--white2);padding:3px 0;border-bottom:1px solid var(--line)">• <b>BCAA</b> : généralement superflus quand l'apport en protéines quotidien est atteint (c'est le cas de ce plan) — économisez votre budget</div>
+    <div style="font-size:13px;color:var(--white2);padding:3px 0">• Hydratation renforcée avec la créatine (+0,5 L/jour)</div>
+    <p class="muted" style="font-size:11px;margin-top:8px">Compléments en vente libre : choisir des produits certifiés (norme anti-dopage AFNOR NF V94-001) et vérifier l'absence de contre-indications médicales.</p>
+  </div>`:"";
+  const swaps=suppPanel+`<div class="panel" style="margin-bottom:12px">
     <div class="ph" style="font-size:13px">Équivalences libres</div>
     <p style="font-size:13px;color:var(--white2);line-height:1.5">Poulet ↔ dinde ↔ poisson blanc ↔ tofu · Riz ↔ pâtes ↔ quinoa ↔ semoule · Amandes ↔ noix ↔ noisettes · Skyr ↔ fromage blanc · Légumes : variez à volonté.</p>
   </div>`;
