@@ -90,8 +90,8 @@
   .fld{display:block;margin-bottom:12px}
   .fld span{display:block;font-size:11px;font-weight:700;color:var(--grey2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.06em}
   .fld input,.fld select,.fld textarea{width:100%;min-width:0;border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:16px;background:var(--ink2);color:var(--white);outline:none;font-family:'Inter';-webkit-appearance:none;appearance:none}
-  .fld select{background-image:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%278%27%3E%3Cpath d=%27M1 1l5 5 5-5%27 stroke=%27%23A39588%27 stroke-width=%272%27 fill=%27none%27 stroke-linecap=%27round%27/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:34px}
-  .pick select{-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%278%27%3E%3Cpath d=%27M1 1l5 5 5-5%27 stroke=%27%23A39588%27 stroke-width=%272%27 fill=%27none%27 stroke-linecap=%27round%27/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:34px}
+  .fld select{background-image:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2714%27 height=%279%27%3E%3Cpath d=%27M1 1l6 6 6-6%27 stroke=%27%23B01F1F%27 stroke-width=%272.4%27 fill=%27none%27 stroke-linecap=%27round%27/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px;border-color:#4A3B32;cursor:pointer}
+  .pick select{-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2714%27 height=%279%27%3E%3Cpath d=%27M1 1l6 6 6-6%27 stroke=%27%23B01F1F%27 stroke-width=%272.4%27 fill=%27none%27 stroke-linecap=%27round%27/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px;font-size:16px;border-color:#4A3B32;cursor:pointer}
   input[type="date"],input[type="datetime-local"]{min-width:0;max-width:100%;width:100%;min-height:44px}
   .fld input:focus,.fld select:focus,.fld textarea:focus{border-color:var(--red)}
   .fld textarea{resize:vertical}
@@ -330,7 +330,7 @@ window.supabase={
 </script>
 <script>
 "use strict";
-const APP_VERSION="v2.0 — 16/07/2026";
+const APP_VERSION="v2.2 — 16/07/2026";
 const SUPA_URL="https://xjmelkqtropownhfmuuh.supabase.co";
 const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqbWVsa3F0cm9wb3duaGZtdXVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3MDI3MTYsImV4cCI6MjA5OTI3ODcxNn0.mYoJx96xZ9SBaGky9EN8_MoTuSy7BY5D_aGB7JIFQyg";
 
@@ -371,10 +371,11 @@ const RESSENTIS=["Facile","Bien","Difficile","Fatiguée"];
 
 const S={ role:"coach", view:"dashboard", detailTab:"infos", clientTab:"programme",
   selectedId:null, clients:[], session:null, loading:false, isClient:false,
-  authView:"login", authErr:"", authBusy:false, showSettings:false, cfgErr:"", templates:[] };
+  authView:"login", authErr:"", authBusy:false, showSettings:false, cfgErr:"", templates:[], q:"" };
 
 const uid=()=>Math.random().toString(36).slice(2,9);
-const today=()=>new Date().toISOString().slice(0,10);
+const today=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");};
+const msgWhen=iso=>{const d=new Date(iso);if(isNaN(d))return iso||"";return d.toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit",year:"2-digit"})+" · "+d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});};
 const frDate=iso=>{if(!iso)return"";const[y,m,d]=iso.split("-");return `${d}/${m}/${y.slice(2)}`;};
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const val=id=>{const e=document.getElementById(id);return e?e.value:"";};
@@ -604,11 +605,20 @@ function dashboard(){
     ${(()=>{
       const rdvs=cs.filter(c=>c.prochainRdv).map(c=>({c,d:new Date(c.prochainRdv)})).filter(x=>x.d>=new Date(Date.now()-3600*1000)).sort((a,b)=>a.d-b.d).slice(0,4);
       if(!rdvs.length) return '';
-      return `<div class="panel" style="margin-bottom:14px"><div class="ph" style="font-size:14px">Prochains RDV</div>
+      const todayStr=new Date().toDateString();
+      const auj=rdvs.filter(x=>x.d.toDateString()===todayStr);
+      const later=rdvs.filter(x=>x.d.toDateString()!==todayStr);
+      return `${auj.length?`<div class="panel" style="margin-bottom:14px;border-color:rgba(184,134,47,.5);background:linear-gradient(180deg,rgba(184,134,47,.08),transparent)">
+        <div class="ph" style="color:var(--amber);font-size:14px">📅 Aujourd'hui</div>
+        ${auj.map(({c,d})=>`<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:15px">
+          <span style="color:var(--white);font-weight:700">${esc(c.nom)}</span>
+          <span style="color:var(--amber);font-weight:800;font-family:'Bebas Neue';font-size:18px;letter-spacing:.05em">${d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</span>
+        </div>`).join("")}</div>`:''}
+      ${later.length?`<div class="panel" style="margin-bottom:14px"><div class="ph" style="font-size:14px">Prochains RDV</div>
         ${rdvs.map(({c,d})=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line);font-size:13.5px">
           <span style="color:var(--white)">${esc(c.nom)}</span>
           <span style="color:var(--red);font-weight:700">${d.toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'})} · ${d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</span>
-        </div>`).join("")}</div>`;})()}
+        </div>`).join("")}</div>`:''}`;})()}
     ${(()=>{
       const finForfait=cs.filter(c=>{const r=forfaitRestant(c);return r!==null&&r<=2;});
       if(!finForfait.length) return '';
@@ -619,7 +629,12 @@ function dashboard(){
       ${inactifs.map(c=>`<span class="badge-warn" style="margin-right:6px;margin-top:4px">${esc(c.nom)}</span>`).join("")}
     </div>`:""}
     <div class="sec-head"><h2>Vos clients</h2><button class="link" data-act="add-open">+ Ajouter</button></div>
-    ${cs.length?cs.map(clientRow).join(""):emptyClients()}
+    ${cs.length>=4?`<label class="fld" style="margin-bottom:10px"><input id="cl-search" placeholder="🔎 Rechercher un client…" value="${esc(S.q||"")}"></label>`:""}
+    ${(()=>{
+      const q=(S.q||"").toLowerCase().trim();
+      const list=q?cs.filter(c2=>(c2.nom||"").toLowerCase().includes(q)||(c2.objectif||"").toLowerCase().includes(q)):cs;
+      return list.length?list.map(clientRow).join(""):(q?`<p class="muted">Aucun client ne correspond à « ${esc(S.q)} ».</p>`:emptyClients());
+    })()}
     <div class="sec-head" style="margin-top:20px"><h2>Compte</h2></div>
     <div class="panel">
       <p class="muted" style="margin-bottom:12px">Connecté : <b>${esc(email)}</b></p>
@@ -883,7 +898,8 @@ async function toggleVoice(role){
   try{
     REC.role=role;
     REC.media=await navigator.mediaDevices.getUserMedia({audio:true});
-    const mime=MediaRecorder.isTypeSupported("audio/webm;codecs=opus")?"audio/webm;codecs=opus":"";
+    const prefs=["audio/mp4;codecs=mp4a.40.2","audio/mp4","audio/webm;codecs=opus","audio/webm"];
+    let mime=""; for(const mm of prefs){ if(window.MediaRecorder&&MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(mm)){ mime=mm; break; } }
     REC.rec=new MediaRecorder(REC.media, mime?{mimeType:mime,audioBitsPerSecond:16000}:{audioBitsPerSecond:16000});
     REC.chunks=[]; REC.secs=0;
     REC.rec.ondataavailable=e=>{ if(e.data.size) REC.chunks.push(e.data); };
@@ -933,7 +949,7 @@ function messagesTab(c,isCoach){
   const rows=msgs.length
     ? msgs.map(m=>`<div class="msg ${m.from==='coach'?'coach':'client'}">
         ${m.audio?`<audio controls preload="metadata" src="${m.audio}" style="max-width:100%;height:36px"></audio>`:m.image?`<img src="${m.image}" data-act="view-img" alt="Photo" style="max-width:100%;border-radius:10px;cursor:pointer;display:block">`:esc(m.text||"")}
-        <div class="mt">${frDate(m.date.slice(0,10))} · ${m.date.slice(11,16)}</div>
+        <div class="mt">${msgWhen(m.date)}</div>
       </div>`).join("")
     : `<p class="muted" style="text-align:center;padding:20px 0">Aucun message.</p>`;
   const role=isCoach?'coach':'client';
@@ -950,6 +966,46 @@ function messagesTab(c,isCoach){
 
 
 /* ===== BILAN ===== */
+/* génère le HTML imprimable du bilan */
+function bilanPrintHTML(c){
+  const info=imcInfo(c);
+  const bilans=c.bilans||[];
+  const last=bilans[bilans.length-1]||{};
+  const prev=bilans.length>1?bilans[bilans.length-2]:null;
+  const F=[["poids","Poids (kg)"],["taille","Tour de taille (cm)"],["brasD","Bras droit (cm)"],["brasG","Bras gauche (cm)"],["cuisseD","Cuisse droite (cm)"],["cuisseG","Cuisse gauche (cm)"]];
+  const rows=F.filter(([k])=>last[k]!=null).map(([k,l])=>{
+    let d="";
+    if(prev&&prev[k]!=null){ const dv=+(last[k]-prev[k]).toFixed(1); d=dv===0?"=":(dv>0?"+"+dv:""+dv); }
+    return `<tr><td style="padding:8px 12px;border-bottom:1px solid #ddd">${l}</td><td style="padding:8px 12px;border-bottom:1px solid #ddd;font-weight:700">${last[k]}</td><td style="padding:8px 12px;border-bottom:1px solid #ddd;color:${d.startsWith('-')?'#2E7D32':'#B8862F'}">${d}</td></tr>`;
+  }).join("");
+  const ms=(c.mesures||[]).filter(m=>typeof m.poids==="number");
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Bilan — ${esc(c.nom)}</title></head>
+  <body style="font-family:Arial,sans-serif;color:#222;max-width:640px;margin:24px auto;padding:0 16px">
+    <div style="display:flex;align-items:center;gap:14px;border-bottom:3px solid #B01F1F;padding-bottom:14px;margin-bottom:18px">
+      <img src="${LOGO}" style="width:74px">
+      <div><div style="font-size:22px;font-weight:800;letter-spacing:.04em">ALEX COACHING</div>
+      <div style="color:#777;font-size:13px">Bilan de suivi — ${frDate(last.date||today())}</div></div>
+    </div>
+    <h2 style="font-size:18px;margin:0 0 4px">${esc(c.nom)}</h2>
+    <p style="color:#666;font-size:13px;margin:0 0 16px">${esc(c.objectif||"")}</p>
+    ${info?`<p style="font-size:15px;background:#F6F1EC;border-radius:8px;padding:10px 14px">IMC : <b>${info.imc}</b> — ${info.cat} <span style="color:#888">(${info.poids} kg · ${info.taille} cm)</span></p>`:""}
+    <table style="width:100%;border-collapse:collapse;margin-top:10px;font-size:14px">
+      <tr style="background:#B01F1F;color:#fff"><th style="padding:8px 12px;text-align:left">Mesure</th><th style="padding:8px 12px;text-align:left">Valeur</th><th style="padding:8px 12px;text-align:left">Évolution</th></tr>
+      ${rows||'<tr><td colspan="3" style="padding:10px">Aucune mesure.</td></tr>'}
+    </table>
+    ${last.note?`<p style="font-size:13px;color:#555;margin-top:12px"><b>Note :</b> ${esc(last.note)}</p>`:""}
+    ${ms.length>=2?`<div style="margin-top:18px">${chart(ms,c.objectifPoids||undefined)}</div>`:""}
+    <p style="margin-top:26px;font-size:11px;color:#999;text-align:center">Alex Coaching — Change ton corps. Transforme ta vie.</p>
+  </body></html>`;
+}
+function printBilan(c){
+  const w=window.open("","_blank");
+  if(!w){ alert("Autorisez les pop-ups pour imprimer le bilan."); return; }
+  w.document.write(bilanPrintHTML(c));
+  w.document.close();
+  setTimeout(()=>{ try{w.print();}catch(e){} },400);
+}
+
 function imcInfo(c){
   const ms=c.mesures||[];
   const poids=ms.length?ms[ms.length-1].poids:null;
@@ -974,6 +1030,10 @@ function bilanTab(c,editable){
   const form=editable?`
     <div class="panel" style="margin-bottom:14px"><div class="ph">Nouveau bilan — ${frDate(today())}</div>
       <div class="r2">
+        <label class="fld"><span>Poids (kg)</span><input id="bl-poids" inputmode="decimal" placeholder="72.5"></label>
+        <label class="fld"><span>Taille (cm)</span><input id="bl-tcm" inputmode="decimal" placeholder="170" value="${c.tailleCm||''}"></label>
+      </div>
+      <div class="r2">
         <label class="fld"><span>Tour de taille (cm)</span><input id="bl-taille" inputmode="decimal" placeholder="82"></label>
         <label class="fld"><span>Bras D (cm)</span><input id="bl-brasD" inputmode="decimal" placeholder="32"></label>
         <label class="fld"><span>Bras G (cm)</span><input id="bl-brasG" inputmode="decimal" placeholder="32"></label>
@@ -987,15 +1047,24 @@ function bilanTab(c,editable){
 
   const rows=[...bilans].reverse().map((b,ri)=>{
     const idx=bilans.length-1-ri;
-    const vals=F.filter(([k])=>b[k]!=null).map(([k,l])=>`${l} : <b>${b[k]} cm</b>`).join(" · ");
+    const prev=idx>0?bilans[idx-1]:null;
+    const delta=(k)=>{
+      if(!prev||prev[k]==null||b[k]==null) return "";
+      const d=+(b[k]-prev[k]).toFixed(1);
+      if(d===0) return ` <span style="color:var(--grey2);font-size:11px">(=)</span>`;
+      return ` <span style="color:${d<0?'#4CAF50':'var(--amber)'};font-size:11px;font-weight:700">(${d>0?'+':''}${d})</span>`;
+    };
+    const poidsLine=b.poids!=null?`Poids : <b>${b.poids} kg</b>${delta('poids')} · `:"";
+    const vals=F.filter(([k])=>b[k]!=null).map(([k,l])=>`${l} : <b>${b[k]} cm</b>${delta(k)}`).join(" · ");
     return `<div class="mrow"><div style="flex:1">
       <span class="md" style="margin-left:0;font-weight:700;color:var(--white)">${frDate(b.date)}</span>
-      <div class="md" style="margin-left:0">${vals||"—"}</div>
+      <div class="md" style="margin-left:0">${poidsLine}${vals||(poidsLine?"":"—")}</div>
       ${b.note?`<div class="md" style="margin-left:0;font-style:italic">${esc(b.note)}</div>`:""}</div>
       ${editable?`<button class="x" data-act="del-bilan" data-idx="${idx}">×</button>`:""}</div>`;
   }).join("");
 
-  return imcCard+form+(rows||`<p class="muted" style="margin-bottom:14px">Aucun bilan enregistré.</p>`)
+  const printBtn=(editable&&bilans.length)?`<button class="btn g full" style="margin-bottom:14px" data-act="print-bilan">🖨 Imprimer / PDF le bilan</button>`:"";
+  return imcCard+form+printBtn+(rows||`<p class="muted" style="margin-bottom:14px">Aucun bilan enregistré.</p>`)
     +`<div class="sec-head" style="margin-top:18px"><h2 style="font-size:16px">Photos</h2></div>`
     +photosTab(c,editable);
 }
@@ -1199,10 +1268,20 @@ document.addEventListener("click",e=>{
       render();
       setTimeout(()=>{const ml=document.getElementById("msg-list");if(ml)ml.scrollTop=ml.scrollHeight;},50);
       break; }
+    case "print-bilan": if(c) printBilan(c); break;
     case "add-bilan":{ if(!c) return;
-      const g=id2=>{const v=parseFloat(String(val(id2)).replace(",","."));return isNaN(v)?null:v;};
-      const b={date:today(),taille:g("bl-taille"),brasD:g("bl-brasD"),brasG:g("bl-brasG"),cuisseD:g("bl-cuisseD"),cuisseG:g("bl-cuisseG"),note:val("bl-note")||""};
-      if(b.taille==null&&b.brasD==null&&b.brasG==null&&b.cuisseD==null&&b.cuisseG==null) return;
+      const g=id2=>{const el2=document.getElementById(id2);if(!el2)return null;const v=parseFloat(String(el2.value).replace(",","."));return isNaN(v)?null:v;};
+      const poids=g("bl-poids"), tcm=g("bl-tcm");
+      const b={date:today(),poids:poids,taille:g("bl-taille"),brasD:g("bl-brasD"),brasG:g("bl-brasG"),cuisseD:g("bl-cuisseD"),cuisseG:g("bl-cuisseG"),note:val("bl-note")||""};
+      if(poids==null&&b.taille==null&&b.brasD==null&&b.brasG==null&&b.cuisseD==null&&b.cuisseG==null) return;
+      if(tcm!=null) c.tailleCm=tcm;
+      if(poids!=null){
+        c.mesures=c.mesures||[];
+        const i=c.mesures.findIndex(m=>m.date===b.date);
+        if(i>=0) c.mesures[i].poids=poids; else c.mesures.push({date:b.date,poids:poids,note:"Bilan"});
+        c.mesures.sort((x,y)=>x.date.localeCompare(y.date));
+        save();
+      } else if(tcm!=null){ save(); }
       c.bilans=c.bilans||[]; c.bilans.push(b);
       patchField(c,"bilans"); render(); break; }
     case "del-bilan": if(c){ c.bilans=(c.bilans||[]).filter((_,i)=>i!==+t.dataset.idx); patchField(c,"bilans"); render(); } break;
@@ -1216,6 +1295,12 @@ document.addEventListener("click",e=>{
   }
 });
 document.addEventListener("input",e=>{
+  if(e.target.id==="cl-search"){
+    S.q=e.target.value; const pos=e.target.selectionStart; render();
+    const el2=document.getElementById("cl-search");
+    if(el2){ el2.focus(); try{el2.setSelectionRange(pos,pos);}catch(_){} }
+    return;
+  }
   if(e.target.id==="msg-text"){ e.target.style.height="auto"; e.target.style.height=Math.min(140,e.target.scrollHeight)+"px"; }
   const eln=e.target.closest("[data-bind-num]");
   if(eln){ const c=sel(); if(!c) return; const v=parseFloat(String(eln.value).replace(",",".")); c[eln.dataset.bindNum]=isNaN(v)?null:v; save(); return; }
