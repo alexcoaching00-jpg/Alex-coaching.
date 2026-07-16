@@ -161,6 +161,9 @@
   .pstat .pl{font-size:10px;color:var(--grey2);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-top:2px}
   .pstat.delta .pv{color:#4CAF50}.pstat.delta.up .pv{color:var(--amber)}
   .pstat.target .pv{color:var(--red)}
+  .tmr{background:var(--ink2);border:1px solid #4A3B32;color:var(--amber);border-radius:999px;padding:4px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter'}
+  .tmr.run{background:var(--red);border-color:var(--red);color:#fff;animation:tpulse 1s ease-in-out infinite}
+  @keyframes tpulse{0%,100%{opacity:1}50%{opacity:.75}}
   /* splash */
   #splash{position:fixed;inset:0;background:#0D0B0A;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;transition:opacity .5s ease}
   #splash.out{opacity:0;pointer-events:none}
@@ -330,7 +333,7 @@ window.supabase={
 </script>
 <script>
 "use strict";
-const APP_VERSION="v2.2 — 16/07/2026";
+const APP_VERSION="v2.3 — 16/07/2026";
 const SUPA_URL="https://xjmelkqtropownhfmuuh.supabase.co";
 const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqbWVsa3F0cm9wb3duaGZtdXVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3MDI3MTYsImV4cCI6MjA5OTI3ODcxNn0.mYoJx96xZ9SBaGky9EN8_MoTuSy7BY5D_aGB7JIFQyg";
 
@@ -471,7 +474,8 @@ function sampleObj(){return{nom:"Madeleine D.",objectif:"Retrouver de l'autonomi
   mesures:[{date:"2026-01-15",poids:72.0,note:"Bilan initial"},{date:"2026-02-15",poids:71.4,note:""},{date:"2026-03-15",poids:70.8,note:"TUG en progrès"}],
   seances:[{date:"2026-03-10",fait:true,ressenti:"Bien",note:""},{date:"2026-03-12",fait:true,ressenti:"Fatiguée",note:"Lombaires ok"}]};}
 
-function chart(mesures,target){
+function chart(mesures,target,unit){
+  unit=unit||"kg";
   const pts=(mesures||[]).filter(m=>typeof m.poids==="number");
   if(pts.length<2) return `<div class="chart-empty">Ajoutez au moins deux mesures pour voir la courbe de progression.</div>`;
   const W=440,H=190,pad={l:36,r:14,t:16,b:26};
@@ -486,14 +490,14 @@ function chart(mesures,target){
   const areaPath=`M ${px(0).toFixed(1)},${(H-pad.b).toFixed(1)} L ${linePts.join(" L ")} L ${px(pts.length-1).toFixed(1)},${(H-pad.b).toFixed(1)} Z`;
   const dots=pts.map((m,i)=>`<circle cx="${px(i).toFixed(1)}" cy="${py(m.poids).toFixed(1)}" r="4.5" fill="#B01F1F" stroke="#F2EDE7" stroke-width="1.5"/>`).join("");
   const lastIdx=pts.length-1;
-  const lastLabel=`<text x="${px(lastIdx).toFixed(1)}" y="${(py(pts[lastIdx].poids)-10).toFixed(1)}" font-size="12" font-weight="700" fill="#F2EDE7" text-anchor="middle">${pts[lastIdx].poids} kg</text>`;
+  const lastLabel=`<text x="${px(lastIdx).toFixed(1)}" y="${(py(pts[lastIdx].poids)-10).toFixed(1)}" font-size="12" font-weight="700" fill="#F2EDE7" text-anchor="middle">${pts[lastIdx].poids} ${unit}</text>`;
   const xlab=pts.map((m,i)=>`<text x="${px(i).toFixed(1)}" y="${H-8}" font-size="10" fill="#6B5F55" text-anchor="middle">${frDate(m.date)}</text>`).join("");
   const grid=[0,.5,1].map(t=>{const y=pad.t+t*(H-pad.t-pad.b),v=(maxY-t*(maxY-minY)).toFixed(1);
     return `<line x1="${pad.l}" y1="${y}" x2="${W-pad.r}" y2="${y}" stroke="#2E2620" stroke-dasharray="3 3"/><text x="4" y="${y+3}" font-size="9" fill="#6B5F55">${v}</text>`;}).join("");
   let targetLine="";
   if(typeof target==="number"){
     const ty=py(target).toFixed(1);
-    targetLine=`<line x1="${pad.l}" y1="${ty}" x2="${W-pad.r}" y2="${ty}" stroke="#B8862F" stroke-width="1.5" stroke-dasharray="6 4"/><text x="${W-pad.r}" y="${(+ty-5).toFixed(1)}" font-size="10" font-weight="700" fill="#B8862F" text-anchor="end">Objectif ${target} kg</text>`;
+    targetLine=`<line x1="${pad.l}" y1="${ty}" x2="${W-pad.r}" y2="${ty}" stroke="#B8862F" stroke-width="1.5" stroke-dasharray="6 4"/><text x="${W-pad.r}" y="${(+ty-5).toFixed(1)}" font-size="10" font-weight="700" fill="#B8862F" text-anchor="end">Objectif ${target} ${unit}</text>`;
   }
   return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Courbe de poids">
     <defs><linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
@@ -698,8 +702,8 @@ function infosTab(c){
     <div class="panel" style="margin-bottom:14px">
       <div class="ph">Accès client</div>
       <label class="fld"><span>E-mail du client</span><input data-bind="clientEmail" type="email" value="${esc(c.clientEmail||"")}" placeholder="client@exemple.fr" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
-      <button class="btn p full" data-act="invite">Envoyer l'invitation par e-mail</button>
-      <p class="muted" style="font-size:12.5px;margin-top:8px">Le client reçoit un lien pour se connecter et accéder uniquement à son espace (programme, progression, séances).</p>
+      <button class="btn p full" data-act="copy-invite">📲 Copier le message d'invitation</button>
+      <p class="muted" style="font-size:12.5px;margin-top:8px">Colle le message dans un SMS ou WhatsApp : le client s'inscrit avec cette adresse e-mail et accède uniquement à son espace.</p>
     </div>
     <div class="r2">
       <label class="fld"><span>Taille (cm) — pour l'IMC</span><input data-bind-num="tailleCm" inputmode="decimal" placeholder="Ex. 170" value="${c.tailleCm||''}"></label>
@@ -747,7 +751,10 @@ function programme(c,editable){
       ${e.note?`<div class="exnote">${esc(e.note)}</div>`:""}
       ${e.alt?`<div class="exd" style="color:var(--amber);font-size:12.5px">↔ Trop difficile ? ${esc(e.alt)}</div>`:""}
       ${last3.length?`<div class="exd" style="color:#4CAF50;font-size:12px">Charges : ${last3.map(h=>`${esc(h.charge)} <span style="color:var(--grey2)">(${frDate(h.date)})</span>`).join(" → ")}</div>`:""}
-      <button class="link" style="font-size:12px;padding:0;margin-top:4px" data-act="log-charge" data-id="${e.id}">+ Noter la charge du jour</button></div>
+      <div style="display:flex;gap:14px;align-items:center;margin-top:5px;flex-wrap:wrap">
+        <button class="link" style="font-size:12px;padding:0" data-act="log-charge" data-id="${e.id}">+ Noter la charge</button>
+        ${parseRepos(e.repos)?`<button class="tmr" id="tmr-${e.id}" data-act="timer" data-id="${e.id}" data-secs="${parseRepos(e.repos)}" data-label="⏱ Repos ${esc(e.repos)}">⏱ Repos ${esc(e.repos)}</button>`:""}
+      </div></div>
       ${editable?`<button class="x" data-act="del-ex" data-id="${e.id}">×</button>`:""}</div></div>`;
   };
   // Grouper par séance (bloc)
@@ -820,7 +827,9 @@ function progres(c,editable){
       <div class="pstat"><div class="pv">${cur} kg</div><div class="pl">Actuel</div></div>
       ${target?`<div class="pstat target"><div class="pv">${target} kg</div><div class="pl">Objectif</div></div>`:''}
     </div>`;})();
-  return chips+`<div class="chartbox">${chart(ms,c.objectifPoids||undefined)}</div>${form}${rows}`;
+  const tPts=ms.filter(m=>typeof m.taille==="number").map(m=>({date:m.date,poids:m.taille}));
+  const tailleChart=tPts.length>=2?`<div class="sec-head" style="margin-top:4px"><h2 style="font-size:15px;color:var(--amber)">Tour de taille</h2></div><div class="chartbox">${chart(tPts,undefined,"cm")}</div>`:"";
+  return chips+`<div class="chartbox">${chart(ms,c.objectifPoids||undefined)}</div>`+tailleChart+`${form}${rows}`;
 }
 function seancesTab(c,editable){
   const ss=c.seances||[];
@@ -861,6 +870,57 @@ function addModal(){
 }
 
 
+
+
+/* ===== TIMER DE REPOS ===== */
+const TIMER={int:null,exId:null};
+function parseRepos(txt){
+  if(!txt) return null;
+  const t=String(txt).toLowerCase().trim();
+  const mm=t.match(/^(\d+)\s*[:h]\s*(\d{1,2})/); // 1:30
+  if(mm) return (+mm[1])*60+(+mm[2]);
+  const n=t.match(/(\d+([.,]\d+)?)/);
+  if(!n) return null;
+  const v=parseFloat(n[1].replace(",","."));
+  if(t.includes("min")||t.includes("mn")||t.includes("'")) return Math.round(v*60);
+  return Math.round(v); // secondes par défaut
+}
+function beep(){
+  try{
+    const ctx=new (window.AudioContext||window.webkitAudioContext)();
+    [0,0.35].forEach(dt=>{
+      const o=ctx.createOscillator(), g=ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.frequency.value=880; g.gain.setValueAtTime(0.25,ctx.currentTime+dt);
+      g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+dt+0.28);
+      o.start(ctx.currentTime+dt); o.stop(ctx.currentTime+dt+0.3);
+    });
+  }catch(e){}
+  try{ if(navigator.vibrate) navigator.vibrate([250,120,250]); }catch(e){}
+}
+function stopTimer(){
+  if(TIMER.int){ clearInterval(TIMER.int); TIMER.int=null; }
+  if(TIMER.exId){
+    const b=document.getElementById("tmr-"+TIMER.exId);
+    if(b){ b.textContent=b.dataset.label; b.classList.remove("run"); }
+    TIMER.exId=null;
+  }
+}
+function startTimer(exId,secs){
+  if(TIMER.exId===exId){ stopTimer(); return; } // 2e appui = annuler
+  stopTimer();
+  TIMER.exId=exId;
+  let left=secs;
+  const b=document.getElementById("tmr-"+exId);
+  const paint=()=>{ const bb=document.getElementById("tmr-"+exId);
+    if(bb){ bb.textContent="⏱ "+Math.floor(left/60)+":"+String(left%60).padStart(2,"0"); bb.classList.add("run"); } };
+  paint();
+  TIMER.int=setInterval(()=>{
+    left--;
+    if(left<=0){ stopTimer(); beep(); toast("Repos terminé — c'est reparti !"); return; }
+    paint();
+  },1000);
+}
 
 /* forfait : séances restantes */
 function forfaitRestant(c){
@@ -1166,7 +1226,17 @@ document.addEventListener("click",e=>{
     case "auth-switch": S.authView=t.dataset.to; S.authErr=""; render(); break;
     case "auth-submit": doAuth(t.dataset.mode); break;
     case "logout": if(sb) sb.auth.signOut(); break;
-    case "invite": inviteClient(); break;
+    case "copy-invite":{ if(!c) return;
+      const email=(c.clientEmail||"").trim();
+      if(!email){ alert("Renseigne d'abord l'adresse e-mail du client ci-dessus."); return; }
+      const prenom=(c.nom||"").split(" ")[0];
+      const url=location.origin+location.pathname;
+      const msg=`Salut ${prenom} ! 💪\nVoici ton espace client Alex Coaching :\n${url}\n\n1. Ouvre le lien\n2. Appuie sur « Créer mon accès »\n3. Inscris-toi avec ton adresse : ${email}\n\nTu y trouveras ton programme, ta progression et notre messagerie. À très vite !`;
+      const done=()=>toast("Message copié — colle-le dans un SMS/WhatsApp");
+      if(navigator.clipboard&&navigator.clipboard.writeText){
+        navigator.clipboard.writeText(msg).then(done).catch(()=>prompt("Copie ce message :",msg));
+      } else { prompt("Copie ce message :",msg); }
+      break; }
     case "role": S.role=t.dataset.role; if(S.role==="client"&&!S.selectedId&&S.clients[0]) S.selectedId=S.clients[0].id; render(); break;
     case "nav": S.view=t.dataset.view; render(); break;
     case "nav-client": S.clientTab=t.dataset.ctab;
@@ -1230,6 +1300,7 @@ document.addEventListener("click",e=>{
         toast(error?"Erreur de copie":"Programme copié vers "+target.nom);
       });
       break; }
+    case "timer": startTimer(t.dataset.id, +t.dataset.secs||60); break;
     case "log-charge":{ if(!c) return;
       const ex=(c.program||[]).find(x=>x.id===t.dataset.id); if(!ex) return;
       const v=prompt(`Charge du jour pour « ${ex.nom} » ?\n(ex : 45 kg, 12 reps à 40 kg…)`, ex.historique&&ex.historique.length?ex.historique[ex.historique.length-1].charge:"");
