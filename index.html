@@ -339,7 +339,7 @@ window.supabase={
 </script>
 <script>
 "use strict";
-const APP_VERSION="v2.4 — 16/07/2026";
+const APP_VERSION="v2.5 — 16/07/2026";
 const SUPA_URL="https://xjmelkqtropownhfmuuh.supabase.co";
 const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqbWVsa3F0cm9wb3duaGZtdXVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3MDI3MTYsImV4cCI6MjA5OTI3ODcxNn0.mYoJx96xZ9SBaGky9EN8_MoTuSy7BY5D_aGB7JIFQyg";
 
@@ -390,8 +390,8 @@ const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;"
 const val=id=>{const e=document.getElementById(id);return e?e.value:"";};
 const sel=()=>S.clients.find(c=>c.id===S.selectedId)||null;
 
-const rowToClient=r=>({id:r.id,nom:r.nom,objectif:r.objectif||"",formule:r.formule||FORMULES[0],niveau:r.niveau||NIVEAUX[0],notes:r.notes||"",clientEmail:r.client_email||"",dateDebut:r.date_debut||"",objectifPoids:r.objectif_poids||null,forfaitTotal:r.forfait_total||null,prochainRdv:r.prochain_rdv||"",programmeDebut:r.programme_debut||"",programmeFin:r.programme_fin||"",tailleCm:r.taille_cm||null,bilans:r.bilans||[],program:r.program||[],mesures:r.mesures||[],seances:r.seances||[],messages:r.messages||[],photos:r.photos||[]});
-const clientToRow=c=>({nom:c.nom,objectif:c.objectif||null,formule:c.formule||null,niveau:c.niveau||null,notes:c.notes||null,client_email:(c.clientEmail||"").trim().toLowerCase()||null,date_debut:c.dateDebut||null,objectif_poids:c.objectifPoids||null,forfait_total:c.forfaitTotal||null,prochain_rdv:c.prochainRdv||null,programme_debut:c.programmeDebut||null,programme_fin:c.programmeFin||null,taille_cm:c.tailleCm||null,bilans:c.bilans||[],program:c.program||[],mesures:c.mesures||[],seances:c.seances||[],messages:c.messages||[],photos:c.photos||[],updated_at:new Date().toISOString()});
+const rowToClient=r=>({id:r.id,nom:r.nom,objectif:r.objectif||"",formule:r.formule||FORMULES[0],niveau:r.niveau||NIVEAUX[0],notes:r.notes||"",clientEmail:r.client_email||"",dateDebut:r.date_debut||"",objectifPoids:r.objectif_poids||null,forfaitTotal:r.forfait_total||null,prochainRdv:r.prochain_rdv||"",programmeDebut:r.programme_debut||"",programmeFin:r.programme_fin||"",tailleCm:r.taille_cm||null,bilans:r.bilans||[],nutrition:r.nutrition||null,program:r.program||[],mesures:r.mesures||[],seances:r.seances||[],messages:r.messages||[],photos:r.photos||[]});
+const clientToRow=c=>({nom:c.nom,objectif:c.objectif||null,formule:c.formule||null,niveau:c.niveau||null,notes:c.notes||null,client_email:(c.clientEmail||"").trim().toLowerCase()||null,date_debut:c.dateDebut||null,objectif_poids:c.objectifPoids||null,forfait_total:c.forfaitTotal||null,prochain_rdv:c.prochainRdv||null,programme_debut:c.programmeDebut||null,programme_fin:c.programmeFin||null,taille_cm:c.tailleCm||null,bilans:c.bilans||[],nutrition:c.nutrition||null,program:c.program||[],mesures:c.mesures||[],seances:c.seances||[],messages:c.messages||[],photos:c.photos||[],updated_at:new Date().toISOString()});
 
 let toastT=null;
 function toast(msg){const t=document.getElementById("toast");if(!t)return;t.textContent=msg;t.style.display="block";clearTimeout(toastT);toastT=setTimeout(()=>t.style.display="none",1200);}
@@ -709,8 +709,9 @@ function infosTab(c){
     <div class="panel" style="margin-bottom:14px">
       <div class="ph">Accès client</div>
       <label class="fld"><span>E-mail du client</span><input data-bind="clientEmail" type="email" value="${esc(c.clientEmail||"")}" placeholder="client@exemple.fr" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
-      <button class="btn p full" data-act="copy-invite">📲 Copier le message d'invitation</button>
-      <p class="muted" style="font-size:12.5px;margin-top:8px">Colle le message dans un SMS ou WhatsApp : le client s'inscrit avec cette adresse e-mail et accède uniquement à son espace.</p>
+      <button class="btn p full" data-act="mail-invite">✉️ Envoyer l'invitation par e-mail</button>
+      <button class="link full" data-act="copy-invite" style="margin-top:8px;font-size:13px">ou copier le message (SMS / WhatsApp)</button>
+      <p class="muted" style="font-size:12.5px;margin-top:8px">Le client s'inscrit avec cette adresse via « Créer mon accès » et accède uniquement à son espace.</p>
     </div>
     <div class="r2">
       <label class="fld"><span>Taille (cm) — pour l'IMC</span><input data-bind-num="tailleCm" inputmode="decimal" placeholder="Ex. 170" value="${c.tailleCm||''}"></label>
@@ -813,13 +814,7 @@ function programme(c,editable){
 }
 function progres(c,editable){
   const ms=c.mesures||[];
-  const form=editable?`
-    <div class="panel" style="margin-bottom:14px"><div class="ph">Nouvelle mesure — ${frDate(today())}</div>
-      <div class="r2"><label class="fld"><span>Poids (kg)</span><input id="me-poids" inputmode="decimal" placeholder="70.5"></label>
-      <label class="fld"><span>Taille (cm)</span><input id="me-taille" inputmode="decimal" placeholder="82"></label>
-      <label class="fld"><span>Hanches (cm)</span><input id="me-hanches" inputmode="decimal" placeholder="98"></label></div>
-      <label class="fld"><span>Note</span><input id="me-note" placeholder="Ressenti, remarque…"></label>
-      <button class="btn p full" data-act="add-me">Enregistrer la mesure</button></div>`:"";
+  const form="";
   const rows=ms.map((m,i)=>({m,i})).reverse().map(({m,i})=>`
     <div class="mrow"><div><span class="mv">${m.poids} kg</span><span class="md">${frDate(m.date)}</span>${m.taille||m.hanches?`<div class="md" style="margin-left:0">${m.taille?`Taille ${m.taille} cm`:''}${m.taille&&m.hanches?' · ':''}${m.hanches?`Hanches ${m.hanches} cm`:''}</div>`:""}${m.note?`<div class="md" style="margin-left:0">${esc(m.note)}</div>`:""}</div>
     ${editable?`<button class="x" data-act="del-me" data-idx="${i}">×</button>`:""}</div>`).join("");
@@ -861,7 +856,7 @@ function clientSpace(c){
       ${r!==null?`<span>Séances restantes : <b>${r}</b></span>`:''}
       ${rdv&&rdv>=new Date(Date.now()-3600*1000)?`<span>Prochain RDV : <b>${rdv.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})} ${rdv.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</b></span>`:''}
     </div>`:''}</div>`;
-  let inner=S.clientTab==="programme"?programme(c,false):S.clientTab==="progres"?progres(c,true):S.clientTab==="messages"?messagesTab(c,false):S.clientTab==="bilan"?bilanTab(c,false):seancesTab(c,true);
+  let inner=S.clientTab==="programme"?programme(c,false):S.clientTab==="progres"?progres(c,false):S.clientTab==="messages"?messagesTab(c,false):S.clientTab==="bilan"?bilanTab(c,false):seancesTab(c,true);
   return banner+inner;
 }
 function addModal(){
@@ -1148,6 +1143,51 @@ function messagesTab(c,isCoach){
 }
 
 
+
+
+/* texte + mailto d'invitation client */
+function inviteText(c){
+  const email=(c.clientEmail||"").trim(); if(!email) return null;
+  const prenom=(c.nom||"").split(" ")[0];
+  const url=location.origin+location.pathname;
+  return `Salut ${prenom} ! 💪\nVoici ton espace client Alex Coaching :\n${url}\n\n1. Ouvre le lien\n2. Appuie sur « Créer mon accès »\n3. Inscris-toi avec ton adresse : ${email}\n\nTu y trouveras ton programme, ta progression et notre messagerie. À très vite !`;
+}
+function inviteMailto(c){
+  const email=(c.clientEmail||"").trim(); if(!email) return null;
+  const body=inviteText(c);
+  return "mailto:"+encodeURIComponent(email)+"?subject="+encodeURIComponent("Ton espace client Alex Coaching 💪")+"&body="+encodeURIComponent(body);
+}
+
+/* ===== NUTRITION (estimation Mifflin-St Jeor + repères généraux) ===== */
+const ACTIVITES=[["sedentaire","Sédentaire (bureau, peu de sport)",1.2],["leger","Légèrement actif (1-2 séances/sem)",1.375],["modere","Modérément actif (3-4 séances/sem)",1.55],["actif","Très actif (5-6 séances/sem)",1.725],["intense","Extrêmement actif (physique + sport quotidien)",1.9]];
+const OBJ_NUT=[["perte","Perte de poids"],["maintien","Maintien / recomposition"],["prise","Prise de masse"]];
+function nutriInfo(c){
+  const n=c.nutrition||{};
+  const ms=(c.mesures||[]).filter(m=>typeof m.poids==="number");
+  const poids=ms.length?ms[ms.length-1].poids:null;
+  const taille=c.tailleCm;
+  if(!n.sexe||!n.age||!n.activite||!n.objectif||!poids||!taille) return null;
+  const bmr=Math.round(10*poids+6.25*taille-5*n.age+(n.sexe==="H"?5:-161));
+  const act=ACTIVITES.find(a=>a[0]===n.activite);
+  const tdee=Math.round(bmr*(act?act[2]:1.55));
+  let cible=tdee;
+  if(n.objectif==="perte") cible=Math.round(tdee*0.85);
+  if(n.objectif==="prise") cible=Math.round(tdee*1.10);
+  // plancher de sécurité
+  const plancher=n.sexe==="H"?1500:1200;
+  if(cible<plancher) cible=plancher;
+  const prot_g=Math.round(poids*(n.objectif==="perte"?2.0:1.8));
+  const lip_g=Math.round(poids*1.0);
+  const gluc_g=Math.max(0,Math.round((cible-prot_g*4-lip_g*9)/4));
+  return {bmr,tdee,cible,prot_g,lip_g,gluc_g,objectif:n.objectif};
+}
+function nutriReperes(obj){
+  const communs=["De l'eau tout au long de la journée (1,5 à 2 L)","Des légumes à chaque repas (la moitié de l'assiette)","Une source de protéines à chaque repas, répartie sur la journée","Féculents complets plutôt que raffinés","Limiter les produits ultra-transformés et les boissons sucrées"];
+  if(obj==="perte") return communs.concat(["Privilégier les aliments rassasiants à faible densité calorique (légumes, protéines maigres)","Attention aux calories liquides (sodas, alcool, jus)","Déficit modéré : la régularité prime sur la restriction"]);
+  if(obj==="prise") return communs.concat(["Augmenter la densité calorique saine : oléagineux, huile d'olive, avocat","Ajouter 1 à 2 collations (ex. fruits + amandes, laitage + flocons)","Manger autour des séances pour soutenir l'entraînement"]);
+  return communs.concat(["Assiette équilibrée : ½ légumes, ¼ protéines, ¼ féculents","Écouter la satiété : manger lentement, sans écran"]);
+}
+
 /* ===== BILAN ===== */
 /* génère le HTML imprimable du bilan */
 function bilanPrintHTML(c){
@@ -1177,6 +1217,12 @@ function bilanPrintHTML(c){
       ${rows||'<tr><td colspan="3" style="padding:10px">Aucune mesure.</td></tr>'}
     </table>
     ${last.note?`<p style="font-size:13px;color:#555;margin-top:12px"><b>Note :</b> ${esc(last.note)}</p>`:""}
+    ${(()=>{const ni=nutriInfo(c);if(!ni)return"";
+      return `<div style="background:#F6F1EC;border-radius:8px;padding:12px 14px;margin-top:14px;font-size:13.5px">
+        <b>Repères nutritionnels</b> — Cible : <b>${ni.cible} kcal/jour</b> (maintenance ${ni.tdee} kcal)<br>
+        Protéines ${ni.prot_g} g · Lipides ${ni.lip_g} g · Glucides ${ni.gluc_g} g
+        <div style="font-size:10.5px;color:#999;margin-top:6px">Estimation indicative (Mifflin-St Jeor) — repères généraux, ne remplace pas une consultation diététique.</div>
+      </div>`;})()}
     ${ms.length>=2?`<div style="margin-top:18px">${chart(ms,c.objectifPoids||undefined)}</div>`:""}
     <p style="margin-top:26px;font-size:11px;color:#999;text-align:center">Alex Coaching — Change ton corps. Transforme ta vie.</p>
   </body></html>`;
@@ -1246,8 +1292,39 @@ function bilanTab(c,editable){
       ${editable?`<button class="x" data-act="del-bilan" data-idx="${idx}">×</button>`:""}</div>`;
   }).join("");
 
+  const n=c.nutrition||{};
+  const ninfo=nutriInfo(c);
+  const nutForm=editable?`
+    <div class="panel" style="margin-bottom:12px"><div class="ph">Profil nutritionnel</div>
+      <div class="r2">
+        <label class="fld"><span>Sexe</span><select data-nut="sexe"><option value="">—</option><option value="H" ${n.sexe==="H"?"selected":""}>Homme</option><option value="F" ${n.sexe==="F"?"selected":""}>Femme</option></select></label>
+        <label class="fld"><span>Âge</span><input type="number" min="12" max="99" data-nut="age" value="${n.age||""}" placeholder="35"></label>
+      </div>
+      <div class="r2">
+        <label class="fld"><span>Activité</span><select data-nut="activite"><option value="">—</option>${ACTIVITES.map(a=>`<option value="${a[0]}" ${n.activite===a[0]?"selected":""}>${a[1]}</option>`).join("")}</select></label>
+        <label class="fld"><span>Objectif</span><select data-nut="objectif"><option value="">—</option>${OBJ_NUT.map(o=>`<option value="${o[0]}" ${n.objectif===o[0]?"selected":""}>${o[1]}</option>`).join("")}</select></label>
+      </div>
+      ${!ninfo?`<p class="muted" style="font-size:12.5px">Renseigne sexe, âge, activité, objectif + un poids et une taille (bilan) pour le calcul automatique.</p>`:""}
+    </div>`:"";
+  const nutCard=ninfo?`
+    <div class="pstats">
+      <div class="pstat"><div class="pv">${ninfo.tdee}</div><div class="pl">Maintenance kcal</div></div>
+      <div class="pstat target"><div class="pv">${ninfo.cible}</div><div class="pl">Cible kcal/jour</div></div>
+    </div>
+    <div class="panel" style="margin-bottom:12px">
+      <div style="display:flex;gap:8px;text-align:center;margin-bottom:10px">
+        <div style="flex:1"><div style="font-family:'Bebas Neue';font-size:20px;color:var(--red)">${ninfo.prot_g} g</div><div style="font-size:10px;color:var(--grey2);text-transform:uppercase;letter-spacing:.06em">Protéines</div></div>
+        <div style="flex:1"><div style="font-family:'Bebas Neue';font-size:20px;color:var(--amber)">${ninfo.lip_g} g</div><div style="font-size:10px;color:var(--grey2);text-transform:uppercase;letter-spacing:.06em">Lipides</div></div>
+        <div style="flex:1"><div style="font-family:'Bebas Neue';font-size:20px;color:#4CAF50">${ninfo.gluc_g} g</div><div style="font-size:10px;color:var(--grey2);text-transform:uppercase;letter-spacing:.06em">Glucides</div></div>
+      </div>
+      <div class="ph" style="font-size:13px">Repères au quotidien</div>
+      ${nutriReperes(ninfo.objectif).map(r2=>`<div style="font-size:13px;color:var(--white2);padding:3px 0;border-bottom:1px solid var(--line)">• ${r2}</div>`).join("")}
+      <p class="muted" style="font-size:11px;margin-top:10px">Estimation indicative (Mifflin-St Jeor) et repères généraux d'équilibre alimentaire — ne remplace pas une consultation diététique.</p>
+    </div>`:"";
+  const nutSection=`<div class="sec-head" style="margin-top:16px"><h2 style="font-size:16px">Nutrition</h2></div>`+nutForm+nutCard+(!editable&&!ninfo?`<p class="muted" style="margin-bottom:12px">Repères nutritionnels à venir — votre coach complète votre profil.</p>`:"");
   const printBtn=(editable&&bilans.length)?`<button class="btn g full" style="margin-bottom:14px" data-act="print-bilan">🖨 Imprimer / PDF le bilan</button>`:"";
   return imcCard+form+printBtn+(rows||`<p class="muted" style="margin-bottom:14px">Aucun bilan enregistré.</p>`)
+    +nutSection
     +`<div class="sec-head" style="margin-top:18px"><h2 style="font-size:16px">Photos</h2></div>`
     +photosTab(c,editable);
 }
@@ -1350,12 +1427,13 @@ document.addEventListener("click",e=>{
     case "auth-switch": S.authView=t.dataset.to; S.authErr=""; render(); break;
     case "auth-submit": doAuth(t.dataset.mode); break;
     case "logout": if(sb) sb.auth.signOut(); break;
+    case "mail-invite":{ if(!c) return;
+      const u=inviteMailto(c);
+      if(!u){ alert("Renseigne d'abord l'adresse e-mail du client ci-dessus."); return; }
+      location.href=u; break; }
     case "copy-invite":{ if(!c) return;
-      const email=(c.clientEmail||"").trim();
-      if(!email){ alert("Renseigne d'abord l'adresse e-mail du client ci-dessus."); return; }
-      const prenom=(c.nom||"").split(" ")[0];
-      const url=location.origin+location.pathname;
-      const msg=`Salut ${prenom} ! 💪\nVoici ton espace client Alex Coaching :\n${url}\n\n1. Ouvre le lien\n2. Appuie sur « Créer mon accès »\n3. Inscris-toi avec ton adresse : ${email}\n\nTu y trouveras ton programme, ta progression et notre messagerie. À très vite !`;
+      const msg=inviteText(c);
+      if(!msg){ alert("Renseigne d'abord l'adresse e-mail du client ci-dessus."); return; }
       const done=()=>toast("Message copié — colle-le dans un SMS/WhatsApp");
       if(navigator.clipboard&&navigator.clipboard.writeText){
         navigator.clipboard.writeText(msg).then(done).catch(()=>prompt("Copie ce message :",msg));
@@ -1515,6 +1593,12 @@ document.addEventListener("input",e=>{
   const c=sel(); if(!c) return; c[el.dataset.bind]=el.value; save();
 });
 document.addEventListener("change",e=>{
+  const nut=e.target.closest("[data-nut]");
+  if(nut){ const c=sel(); if(!c) return;
+    c.nutrition=c.nutrition||{};
+    const k=nut.dataset.nut;
+    c.nutrition[k]=k==="age"?(parseInt(nut.value)||null):(nut.value||null);
+    save(); render(); return; }
   if(e.target.id==="msg-photo" && e.target.files && e.target.files[0]){
     const role=e.target.dataset.role||"coach";
     const c=sel(); if(!c) return;
