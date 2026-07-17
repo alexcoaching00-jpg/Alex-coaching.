@@ -339,7 +339,7 @@ window.supabase={
 </script>
 <script>
 "use strict";
-const APP_VERSION="v2.8 — 16/07/2026";
+const APP_VERSION="v2.9 — 16/07/2026";
 const SUPA_URL="https://xjmelkqtropownhfmuuh.supabase.co";
 const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqbWVsa3F0cm9wb3duaGZtdXVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3MDI3MTYsImV4cCI6MjA5OTI3ODcxNn0.mYoJx96xZ9SBaGky9EN8_MoTuSy7BY5D_aGB7JIFQyg";
 
@@ -1159,23 +1159,25 @@ function inviteMailto(c){
 }
 
 /* ===== NUTRITION (estimation Mifflin-St Jeor + repères généraux) ===== */
-const ACTIVITES=[["sedentaire","Sédentaire (bureau, peu de sport)",1.2],["leger","Légèrement actif (1-2 séances/sem)",1.375],["modere","Modérément actif (3-4 séances/sem)",1.55],["actif","Très actif (5-6 séances/sem)",1.725],["intense","Extrêmement actif (physique + sport quotidien)",1.9]];
+const ACTIVITES=[["sedentaire","Sédentaire — NAP 1,4",1.4],["leger","Peu actif (1-2 séances/sem) — NAP 1,6",1.6],["modere","Actif (3-4 séances/sem) — NAP 1,8",1.8],["actif","Très actif (5-6 séances/sem) — NAP 2,0",2.0],["intense","Athlète / physique intense — NAP 2,2",2.2]];
 const OBJ_NUT=[["perte","Perte de poids"],["maintien","Maintien / recomposition"],["prise","Prise de masse"]];
-const RYTHMES=[["progressif","Progressif (confort, long terme)"],["standard","Standard (recommandé)"],["rapide","Rapide (court terme, encadré)"]];
+const RYTHMES=[["progressif","Progressif (confort, long terme)"],["standard","Standard (recommandé)"],["rapide","Rapide (court terme, encadré)"],["seche","Sèche extrême (événement, 4-6 sem max)"]];
 function nutriInfo(c){
   const n=c.nutrition||{};
   const ms=(c.mesures||[]).filter(m=>typeof m.poids==="number");
   const poids=ms.length?ms[ms.length-1].poids:null;
   const taille=c.tailleCm;
   if(!n.sexe||!n.age||!n.activite||!n.objectif||!poids||!taille) return null;
-  // 1. Métabolisme de base — Mifflin-St Jeor (référence clinique)
-  const bmr=Math.round(10*poids+6.25*taille-5*n.age+(n.sexe==="H"?5:-161));
+  // 1. Métabolisme de base — Black et al. 1996 (référence ANSES / cours CQP)
+  const t_m=taille/100;
+  const mj=(n.sexe==="H"?1.083:0.963)*Math.pow(poids,0.48)*Math.pow(t_m,0.50)*Math.pow(n.age,-0.13);
+  const bmr=Math.round(mj*239);
   const act=ACTIVITES.find(a=>a[0]===n.activite);
-  const tdee=Math.round(bmr*(act?act[2]:1.55));
+  const tdee=Math.round(bmr*(act?act[2]:1.6));
   // 2. Ajustement en kcal ABSOLUES bornées (pas un simple %) selon le rythme choisi
   const rythme=n.rythme||"standard";
   const R={
-    perte:{progressif:[0.10,250,450],standard:[0.175,350,650],rapide:[0.25,500,900]},
+    perte:{progressif:[0.10,250,450],standard:[0.175,350,650],rapide:[0.25,500,900],seche:[0.325,700,1100]},
     prise:{progressif:[0.07,150,300],standard:[0.12,250,450],rapide:[0.18,400,700]}
   };
   let delta=0;
@@ -1189,8 +1191,8 @@ function nutriInfo(c){
   // 4. Rythme de variation estimé (7700 kcal ≈ 1 kg)
   const rate=+(Math.abs(delta)*7/7700).toFixed(2);
   // 5. Macros pro : protéines g/kg selon phase (ISSN), lipides 27,5% kcal (plancher 0,6 g/kg), glucides = solde
-  const gkg=n.objectif==="perte"?2.2:n.objectif==="prise"?2.0:1.8;
-  const prot_g=Math.min(230,Math.round(poids*gkg));
+  const gkg=n.objectif==="perte"?(rythme==="seche"?2.5:2.2):n.objectif==="prise"?2.0:1.8;
+  const prot_g=Math.min(240,Math.round(poids*gkg));
   let lip_g=Math.round(cible*0.275/9);
   const lipMin=Math.round(poids*0.6);
   if(lip_g<lipMin) lip_g=lipMin;
@@ -1285,7 +1287,7 @@ function nutritionTab(c,editable){
         <label class="fld"><span>Activité</span><select data-nut="activite"><option value="">—</option>${ACTIVITES.map(a=>`<option value="${a[0]}" ${n.activite===a[0]?"selected":""}>${a[1]}</option>`).join("")}</select></label>
         <label class="fld"><span>Objectif</span><select data-nut="objectif"><option value="">—</option>${OBJ_NUT.map(o=>`<option value="${o[0]}" ${n.objectif===o[0]?"selected":""}>${o[1]}</option>`).join("")}</select></label>
       </div>
-      ${(n.objectif==="perte"||n.objectif==="prise")?`<label class="fld"><span>Rythme</span><select data-nut="rythme">${RYTHMES.map(r2=>`<option value="${r2[0]}" ${(n.rythme||"standard")===r2[0]?"selected":""}>${r2[1]}</option>`).join("")}</select></label>`:""}
+      ${(n.objectif==="perte"||n.objectif==="prise")?`<label class="fld"><span>Rythme</span><select data-nut="rythme">${RYTHMES.filter(r2=>n.objectif==="perte"||r2[0]!=="seche").map(r2=>`<option value="${r2[0]}" ${(n.rythme||"standard")===r2[0]?"selected":""}>${r2[1]}</option>`).join("")}</select></label>`:""}
       <label class="fld"><span>Suppléments</span><select data-nut="supplements"><option value="" ${!n.supplements||n.supplements!=="oui"?"selected":""}>Sans (alimentation seule)</option><option value="oui" ${n.supplements==="oui"?"selected":""}>Avec whey & caséine</option></select></label>
       ${!ninfo?`<p class="muted" style="font-size:12.5px">Renseigne sexe, âge, activité et objectif + un poids et une taille (onglet Bilan) : le plan se calcule automatiquement.</p>`:""}
     </div>`:"";
@@ -1302,6 +1304,7 @@ function nutritionTab(c,editable){
     <div class="panel" style="margin-bottom:12px">
       <div style="text-align:center;font-size:13.5px;color:${ninfo.delta<0?'var(--amber)':ninfo.delta>0?'#4CAF50':'var(--grey)'};font-weight:700;margin-bottom:10px">${deltaTxt}</div>
       ${ninfo.floored?`<div class="badge-warn" style="display:block;text-align:center;margin-bottom:10px">⚠ Cible relevée au plancher de sécurité — rythme choisi trop agressif pour ce profil</div>`:""}
+      ${ninfo.rythme==="seche"&&ninfo.objectif==="perte"?`<div class="badge-warn" style="display:block;text-align:center;margin-bottom:10px">⏳ Sèche extrême : 4 à 6 semaines MAX, pour une échéance précise. Suivi rapproché (énergie, sommeil, performance) — retour au rythme standard ensuite.</div>`:""}
       <div style="display:flex;gap:8px;text-align:center">
         <div style="flex:1"><div style="font-family:'Bebas Neue';font-size:20px;color:var(--red)">${ninfo.prot_g} g</div><div style="font-size:10px;color:var(--grey2);text-transform:uppercase;letter-spacing:.06em">Protéines ${ninfo.pctP}%</div><div style="font-size:10px;color:var(--grey2)">${String(ninfo.gkg).replace(".",",")} g/kg</div></div>
         <div style="flex:1"><div style="font-family:'Bebas Neue';font-size:20px;color:var(--amber)">${ninfo.lip_g} g</div><div style="font-size:10px;color:var(--grey2);text-transform:uppercase;letter-spacing:.06em">Lipides ${ninfo.pctL}%</div></div>
