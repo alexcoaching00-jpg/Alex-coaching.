@@ -175,6 +175,18 @@
   .wk-dot{display:inline-block;width:13px;height:13px;border-radius:999px;background:var(--ink2);border:1.5px solid var(--line);margin:0 4px}
   .wk-dot.d{background:var(--red);border-color:var(--red)}
   .wk-dot.cur{border-color:var(--amber)}
+
+  /* micro-animations */
+  @keyframes fadeUp{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+  .crow,.stat,.pstat,.card,.panel{animation:fadeUp .24s ease both}
+  .crow:nth-child(2){animation-delay:.03s}.crow:nth-child(3){animation-delay:.06s}.crow:nth-child(4){animation-delay:.09s}
+  .btn:active{transform:scale(.965)}
+  .crow:active{transform:scale(.985)}
+  .btn,.crow{transition:transform .12s ease}
+  /* confettis */
+  .cft{position:fixed;top:-14px;width:9px;height:14px;z-index:260;border-radius:2px;pointer-events:none;animation:cfall linear forwards}
+  @keyframes cfall{to{transform:translateY(110vh) rotate(720deg);opacity:.9}}
+
   /* splash */
   #splash{position:fixed;inset:0;background:#0D0B0A;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;transition:opacity .5s ease}
   #splash.out{opacity:0;pointer-events:none}
@@ -344,7 +356,7 @@ window.supabase={
 </script>
 <script>
 "use strict";
-const APP_VERSION="v3.3 — 16/07/2026";
+const APP_VERSION="v3.4 — 16/07/2026";
 const SUPA_URL="https://xjmelkqtropownhfmuuh.supabase.co";
 const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqbWVsa3F0cm9wb3duaGZtdXVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3MDI3MTYsImV4cCI6MjA5OTI3ODcxNn0.mYoJx96xZ9SBaGky9EN8_MoTuSy7BY5D_aGB7JIFQyg";
 
@@ -603,6 +615,10 @@ function dashboard(){
     return (now-last)/(1000*60*60*24)>14;
   });
   return `
+    <div style="margin-bottom:12px">
+      <div style="font-family:'Bebas Neue';font-size:24px;letter-spacing:.04em;color:var(--white)">${greet()} Coach 👋</div>
+      <div style="font-size:12.5px;color:var(--grey2);text-transform:capitalize">${todayLong()}</div>
+    </div>
     <div class="row-stats">
       <div class="stat"><div class="v">${cs.length}</div><div class="l">Clients</div></div>
       <div class="stat"><div class="v">${totalSeances}</div><div class="l">Séances</div></div>
@@ -690,10 +706,11 @@ function clientRow(c){
     </div></button>`;
 }
 function emptyClients(){
-  return `<div class="empty"><div class="t">Aucun client pour l'instant</div>
-    <p>Ajoutez votre premier client pour créer son programme et suivre sa progression.</p>
-    <div class="col"><button class="btn p full" data-act="add-open">Ajouter un client</button>
-    <button class="btn g full" data-act="sample">Charger un exemple (Madeleine)</button></div></div>`;
+  return `<div class="panel" style="text-align:center;padding:28px 18px">
+    <div style="font-size:40px;margin-bottom:8px">🏋️</div>
+    <p style="font-size:15px;color:var(--white);font-weight:700;margin-bottom:4px">Votre premier client vous attend</p>
+    <p class="muted" style="font-size:13px">Ajoutez-le avec le bouton ci-dessus — sa fiche, son programme et son suivi seront prêts en 2 minutes. Lancez-vous ! 💪</p>
+  </div>`;
 }
 function detail(c){
   if(!c)return"";
@@ -851,6 +868,40 @@ function progres(c,editable){
   return chips+`<div class="chartbox">${chart(ms,c.objectifPoids||undefined)}</div>`+tailleChart+`${form}${rows}`;
 }
 
+
+/* ===== EXPÉRIENCE ===== */
+function greet(){const h=new Date().getHours();return h<5?"Bonne nuit":h<12?"Bonjour":h<18?"Bon après-midi":"Bonsoir";}
+function todayLong(){return new Date().toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"});}
+const QUOTES=["La régularité bat le talent.","Un jour, ou jour un. À toi de choisir.","Ton seul adversaire, c'est toi d'hier.","Les résultats se construisent quand personne ne regarde.","Chaque répétition te rapproche.","La discipline, c'est se souvenir de ce que tu veux vraiment.","Un petit progrès chaque jour donne de grands résultats.","Le corps abandonne bien après la tête.","Tu n'es qu'à une séance d'une meilleure humeur.","Fais-le pour le toi de demain.","La sueur d'aujourd'hui, la fierté de demain.","Pas de raccourci : du travail, du repos, de la constance.","Ce qui ne te défie pas ne te change pas.","Commence où tu es, avec ce que tu as."];
+function quoteOfDay(){const d=new Date();const doy=Math.floor((d-new Date(d.getFullYear(),0,0))/86400000);return QUOTES[doy%QUOTES.length];}
+function streakWeeks(c){
+  const done=(c.seances||[]).filter(x=>x.fait&&x.date);
+  if(!done.length) return 0;
+  const monday=d=>{const m=new Date(d);const day=(m.getDay()+6)%7;m.setDate(m.getDate()-day);m.setHours(0,0,0,0);return m;};
+  const w0=monday(new Date());
+  const count=i=>{const st=new Date(w0);st.setDate(st.getDate()-7*i);const en=new Date(st);en.setDate(en.getDate()+7);
+    return done.filter(x=>{const d=new Date(x.date+"T12:00:00");return d>=st&&d<en;}).length;};
+  let i=count(0)>0?0:1, k=0;
+  while(k<52 && count(i+k)>0) k++;
+  return k;
+}
+function confetti(){
+  try{
+    const colors=["#B01F1F","#B8862F","#F2EDE7","#7E1712","#4CAF50"];
+    for(let i=0;i<40;i++){
+      const el=document.createElement("div");
+      el.className="cft";
+      el.style.left=(Math.random()*100)+"vw";
+      el.style.background=colors[i%colors.length];
+      el.style.animationDuration=(1.6+Math.random()*1.4)+"s";
+      el.style.animationDelay=(Math.random()*0.4)+"s";
+      el.style.transform="rotate("+(Math.random()*360)+"deg)";
+      document.body.appendChild(el);
+      setTimeout(()=>el.remove(),3600);
+    }
+  }catch(e){}
+}
+
 /* barres d'assiduité : séances validées par semaine (8 dernières) */
 function adherenceChart(c){
   const done=(c.seances||[]).filter(x=>x.fait&&x.date);
@@ -929,11 +980,16 @@ function clientSpace(c){
   if(!c)return `<p class="muted" style="text-align:center;margin-top:40px">Sélectionnez un client en haut de l'écran.</p>`;
   const r=forfaitRestant(c);
   const rdv=c.prochainRdv?new Date(c.prochainRdv):null;
-  const banner=`<div class="cbanner"><div class="lab">Votre objectif</div><div class="obj">${esc(c.objectif||"—")}</div>
+  const prenom=(c.nom||"").split(" ")[0];
+  const stk=streakWeeks(c);
+  const banner=`<div class="cbanner">
+    <div style="font-family:'Bebas Neue';font-size:20px;letter-spacing:.04em;color:#fff;margin-bottom:6px">${greet()} ${esc(prenom)} 👋 ${stk>=2?`<span style="font-size:14px;background:rgba(0,0,0,.25);border-radius:999px;padding:2px 10px;vertical-align:middle">🔥 ${stk} sem. d'affilée</span>`:""}</div>
+    <div class="lab">Votre objectif</div><div class="obj">${esc(c.objectif||"—")}</div>
     ${(r!==null||rdv)?`<div style="display:flex;gap:14px;margin-top:10px;font-size:12.5px;color:rgba(255,255,255,.85)">
       ${r!==null?`<span>Séances restantes : <b>${r}</b></span>`:''}
       ${rdv&&rdv>=new Date(Date.now()-3600*1000)?`<span>Prochain RDV : <b>${rdv.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})} ${rdv.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</b></span>`:''}
-    </div>`:''}</div>`;
+    </div>`:''}
+    <div style="margin-top:10px;font-size:12.5px;font-style:italic;color:rgba(255,255,255,.75)">« ${quoteOfDay()} »</div></div>`;
   let inner=S.clientTab==="programme"?programme(c,false):S.clientTab==="progres"?progres(c,false):S.clientTab==="messages"?messagesTab(c,false):S.clientTab==="bilan"?bilanTab(c,false):S.clientTab==="nutrition"?nutritionTab(c,false):seancesTab(c,true);
   return banner+inner;
 }
@@ -1013,10 +1069,12 @@ function wkFinish(){
     <div style="font-size:64px">💪</div>
     <h2 style="font-family:'Bebas Neue';font-size:34px;letter-spacing:.05em;color:var(--white);margin:10px 0 4px">Séance terminée !</h2>
     <p style="color:var(--grey);margin-bottom:6px">${esc(WK.jour)} · ${WK.exos.length} exercices — bien joué.</p>
-    <p style="color:var(--grey2);font-size:13px;margin-bottom:22px">La séance a été enregistrée automatiquement.</p>
+    <p style="color:var(--grey2);font-size:13px;margin-bottom:10px">La séance a été enregistrée automatiquement.</p>
+    <p style="color:var(--amber);font-size:13px;font-style:italic;margin-bottom:22px">« ${quoteOfDay()} »</p>
     <button class="btn p full" data-act="wk-close-force" style="max-width:280px">Fermer</button>
   </div>`;
   alarm(3);
+  confetti();
   WK.on=false;
   render();
 }
