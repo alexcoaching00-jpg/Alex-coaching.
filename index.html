@@ -344,7 +344,7 @@ window.supabase={
 </script>
 <script>
 "use strict";
-const APP_VERSION="v3.2 — 16/07/2026";
+const APP_VERSION="v3.3 — 16/07/2026";
 const SUPA_URL="https://xjmelkqtropownhfmuuh.supabase.co";
 const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqbWVsa3F0cm9wb3duaGZtdXVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3MDI3MTYsImV4cCI6MjA5OTI3ODcxNn0.mYoJx96xZ9SBaGky9EN8_MoTuSy7BY5D_aGB7JIFQyg";
 
@@ -395,8 +395,8 @@ const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;"
 const val=id=>{const e=document.getElementById(id);return e?e.value:"";};
 const sel=()=>S.clients.find(c=>c.id===S.selectedId)||null;
 
-const rowToClient=r=>({id:r.id,nom:r.nom,objectif:r.objectif||"",formule:r.formule||FORMULES[0],niveau:r.niveau||NIVEAUX[0],notes:r.notes||"",clientEmail:r.client_email||"",dateDebut:r.date_debut||"",objectifPoids:r.objectif_poids||null,forfaitTotal:r.forfait_total||null,prochainRdv:r.prochain_rdv||"",programmeDebut:r.programme_debut||"",programmeFin:r.programme_fin||"",tailleCm:r.taille_cm||null,bilans:r.bilans||[],nutrition:r.nutrition||null,program:r.program||[],mesures:r.mesures||[],seances:r.seances||[],messages:r.messages||[],photos:r.photos||[]});
-const clientToRow=c=>({nom:c.nom,objectif:c.objectif||null,formule:c.formule||null,niveau:c.niveau||null,notes:c.notes||null,client_email:(c.clientEmail||"").trim().toLowerCase()||null,date_debut:c.dateDebut||null,objectif_poids:c.objectifPoids||null,forfait_total:c.forfaitTotal||null,prochain_rdv:c.prochainRdv||null,programme_debut:c.programmeDebut||null,programme_fin:c.programmeFin||null,taille_cm:c.tailleCm||null,bilans:c.bilans||[],nutrition:c.nutrition||null,program:c.program||[],mesures:c.mesures||[],seances:c.seances||[],messages:c.messages||[],photos:c.photos||[],updated_at:new Date().toISOString()});
+const rowToClient=r=>({id:r.id,nom:r.nom,objectif:r.objectif||"",formule:r.formule||FORMULES[0],niveau:r.niveau||NIVEAUX[0],notes:r.notes||"",clientEmail:r.client_email||"",dateDebut:r.date_debut||"",objectifPoids:r.objectif_poids||null,forfaitTotal:r.forfait_total||null,prochainRdv:r.prochain_rdv||"",programmeDebut:r.programme_debut||"",programmeFin:r.programme_fin||"",tailleCm:r.taille_cm||null,bilans:r.bilans||[],nutrition:r.nutrition||null,checkins:r.checkins||[],program:r.program||[],mesures:r.mesures||[],seances:r.seances||[],messages:r.messages||[],photos:r.photos||[]});
+const clientToRow=c=>({nom:c.nom,objectif:c.objectif||null,formule:c.formule||null,niveau:c.niveau||null,notes:c.notes||null,client_email:(c.clientEmail||"").trim().toLowerCase()||null,date_debut:c.dateDebut||null,objectif_poids:c.objectifPoids||null,forfait_total:c.forfaitTotal||null,prochain_rdv:c.prochainRdv||null,programme_debut:c.programmeDebut||null,programme_fin:c.programmeFin||null,taille_cm:c.tailleCm||null,bilans:c.bilans||[],nutrition:c.nutrition||null,checkins:c.checkins||[],program:c.program||[],mesures:c.mesures||[],seances:c.seances||[],messages:c.messages||[],photos:c.photos||[],updated_at:new Date().toISOString()});
 
 let toastT=null;
 function toast(msg){const t=document.getElementById("toast");if(!t)return;t.textContent=msg;t.style.display="block";clearTimeout(toastT);toastT=setTimeout(()=>t.style.display="none",1200);}
@@ -641,6 +641,16 @@ function dashboard(){
       if(!finForfait.length) return '';
       return `<div class="panel" style="margin-bottom:14px;border-color:rgba(193,18,31,.35)"><div class="ph" style="color:var(--red);font-size:14px">Forfaits à renouveler</div>
         ${finForfait.map(c=>`<span class="badge-warn" style="margin-right:6px;background:rgba(193,18,31,.15);color:#FF6B6B">${esc(c.nom)} · ${forfaitRestant(c)} restante${forfaitRestant(c)>1?'s':''}</span>`).join("")}</div>`;})()}
+    ${(()=>{
+      const low=cs.map(c2=>{const l=(c2.checkins||[]);const ci=l.length?l[l.length-1]:null;
+        if(!ci) return null;
+        const moy=((ci.energie||3)+(ci.sommeil||3)+(ci.motivation||3)+(ci.courbatures||3))/4;
+        return moy<=2.5?{c2,moy:moy.toFixed(1)}:null;}).filter(Boolean);
+      if(!low.length) return '';
+      return `<div class="panel" style="margin-bottom:14px;border-color:rgba(176,31,31,.4)">
+        <div class="ph" style="color:var(--red);font-size:14px">📋 Check-ins à surveiller</div>
+        ${low.map(({c2,moy})=>`<span class="badge-warn" style="margin-right:6px;background:rgba(176,31,31,.15);color:#FF6B6B">${esc(c2.nom)} · moy. ${moy}/5</span>`).join("")}
+      </div>`;})()}
     ${inactifs.length?`<div class="panel" style="margin-bottom:14px;border-color:rgba(240,180,41,.3)">
       <div class="ph" style="color:#F0B429;font-size:14px">⚠ ${inactifs.length} client${inactifs.length>1?'s':''} inactif${inactifs.length>1?'s':''} (+14 jours)</div>
       ${inactifs.map(c=>`<span class="badge-warn" style="margin-right:6px;margin-top:4px">${esc(c.nom)}</span>`).join("")}
@@ -840,6 +850,65 @@ function progres(c,editable){
   const tailleChart=tPts.length>=2?`<div class="sec-head" style="margin-top:4px"><h2 style="font-size:15px;color:var(--amber)">Tour de taille</h2></div><div class="chartbox">${chart(tPts,undefined,"cm")}</div>`:"";
   return chips+`<div class="chartbox">${chart(ms,c.objectifPoids||undefined)}</div>`+tailleChart+`${form}${rows}`;
 }
+
+/* barres d'assiduité : séances validées par semaine (8 dernières) */
+function adherenceChart(c){
+  const done=(c.seances||[]).filter(x=>x.fait&&x.date);
+  if(!done.length) return "";
+  const now=new Date(); now.setHours(12,0,0,0);
+  const monday=d=>{const m=new Date(d);const day=(m.getDay()+6)%7;m.setDate(m.getDate()-day);m.setHours(0,0,0,0);return m;};
+  const w0=monday(now);
+  const weeks=Array.from({length:8},(_,i)=>{const st=new Date(w0);st.setDate(st.getDate()-7*(7-i));return st;});
+  const counts=weeks.map(st=>{const en=new Date(st);en.setDate(en.getDate()+7);
+    return done.filter(x=>{const d=new Date(x.date+"T12:00:00");return d>=st&&d<en;}).length;});
+  const max=Math.max(3,...counts);
+  const W=300,H=64,bw=26;
+  const bars=counts.map((n2,i)=>{
+    const h2=n2?Math.max(6,Math.round(n2/max*44)):3;
+    const x=10+i*36, y=50-h2;
+    return `<rect x="${x}" y="${y}" width="${bw}" height="${h2}" rx="4" fill="${n2?'#B01F1F':'#2E2620'}"/>
+      ${n2?`<text x="${x+bw/2}" y="${y-4}" font-size="11" font-weight="700" fill="#F2EDE7" text-anchor="middle">${n2}</text>`:""}
+      ${i===7?`<text x="${x+bw/2}" y="${H-2}" font-size="9" fill="#A39588" text-anchor="middle">cette sem.</text>`:""}`;
+  }).join("");
+  return `<div class="panel" style="margin-bottom:14px"><div class="ph" style="font-size:13px">Assiduité — 8 dernières semaines</div>
+    <svg viewBox="0 0 ${W} ${H}" width="100%">${bars}</svg></div>`;
+}
+/* check-in hebdo */
+const CHECKIN_FIELDS=[["energie","Énergie"],["sommeil","Sommeil"],["motivation","Motivation"],["courbatures","Récupération"]];
+function lastCheckin(c){const l=(c.checkins||[]);return l.length?l[l.length-1]:null;}
+function checkinDue(c){
+  const l=lastCheckin(c); if(!l) return true;
+  return (Date.now()-new Date(l.date+"T12:00:00").getTime())/(24*3600*1000)>=6;
+}
+function checkinDot(v){const col=v<=2?"var(--red)":v===3?"var(--amber)":"#4CAF50";return `<span style="display:inline-block;width:9px;height:9px;border-radius:999px;background:${col};margin-right:3px"></span>`;}
+function checkinClientForm(c){
+  if(!checkinDue(c)){
+    const l=lastCheckin(c);
+    return `<div class="panel" style="margin-bottom:14px"><div class="ph" style="font-size:13px">Check-in de la semaine ✓</div>
+      <p style="font-size:13px;color:var(--white2)">${CHECKIN_FIELDS.map(([k,lab])=>`${checkinDot(l[k]||3)}${lab} ${l[k]||"—"}/5`).join(" · ")}</p>
+      <p class="muted" style="font-size:12px;margin-top:6px">Fait le ${frDate(l.date)} — prochain dans quelques jours.</p></div>`;
+  }
+  return `<div class="panel" style="margin-bottom:14px;border-color:rgba(184,134,47,.4)">
+    <div class="ph" style="font-size:14px;color:var(--amber)">📋 Check-in de la semaine</div>
+    <p class="muted" style="font-size:12.5px;margin-bottom:10px">30 secondes pour aider votre coach à ajuster votre programme (1 = très bas · 5 = excellent).</p>
+    ${CHECKIN_FIELDS.map(([k,lab])=>`<label class="fld"><span>${lab} : <b id="ci-v-${k}" style="color:var(--amber)">3</b>/5</span>
+      <input type="range" min="1" max="5" value="3" id="ci-${k}" data-ci="${k}" style="width:100%"></label>`).join("")}
+    <label class="fld"><span>Un mot sur votre semaine (optionnel)</span><input id="ci-note" placeholder="Fatigue, douleurs, victoires…"></label>
+    <button class="btn p full" data-act="send-checkin">Envoyer mon check-in</button>
+  </div>`;
+}
+function checkinCoachHistory(c){
+  const l=(c.checkins||[]);
+  if(!l.length) return "";
+  const rows=[...l].slice(-6).reverse().map(ci=>`
+    <div class="mrow"><div style="flex:1">
+      <span class="md" style="margin-left:0;font-weight:700;color:var(--white)">${frDate(ci.date)}</span>
+      <div class="md" style="margin-left:0">${CHECKIN_FIELDS.map(([k,lab])=>`${checkinDot(ci[k]||3)}${lab} ${ci[k]||"—"}`).join(" · ")}</div>
+      ${ci.note?`<div class="md" style="margin-left:0;font-style:italic">« ${esc(ci.note)} »</div>`:""}
+    </div></div>`).join("");
+  return `<div class="sec-head" style="margin-top:4px"><h2 style="font-size:15px">Check-ins hebdo</h2></div>${rows}`;
+}
+
 function seancesTab(c,editable){
   const ss=c.seances||[];
   const form=editable?`
@@ -852,7 +921,9 @@ function seancesTab(c,editable){
     <div style="flex:1"><div style="font-weight:700;font-size:14px">${frDate(s.date)} · ${esc(s.ressenti)}</div>${s.note?`<div class="md" style="margin-left:0">${esc(s.note)}</div>`:""}</div>
     ${editable?`<button class="x" data-act="del-se" data-idx="${i}">×</button>`:""}</div>`).join("")
     : `<p class="muted">Aucune séance enregistrée.</p>`;
-  return form+rows;
+  const adh=adherenceChart(c);
+  const ci=S.isClient?checkinClientForm(c):checkinCoachHistory(c);
+  return (S.isClient?ci:"")+adh+form+(S.isClient?"":ci)+rows;
 }
 function clientSpace(c){
   if(!c)return `<p class="muted" style="text-align:center;margin-top:40px">Sélectionnez un client en haut de l'écran.</p>`;
@@ -932,6 +1003,11 @@ function wkFinish(){
   c.seances=c.seances||[];
   c.seances.push({date:today(),fait:true,ressenti:"",note:"Séance "+WK.jour+" — mode guidé ("+WK.exos.length+" exercices)"});
   save();
+  if(S.isClient){
+    c.messages=c.messages||[];
+    c.messages.push({from:"client",text:"💪 Séance "+WK.jour+" terminée — "+WK.exos.length+" exercice"+(WK.exos.length>1?"s":"")+" (mode guidé)",date:new Date().toISOString(),lu:false});
+    patchField(c,"messages",()=>{});
+  }
   const ov=document.getElementById("wk");
   if(ov) ov.innerHTML=`<div class="wk-in" style="justify-content:center;text-align:center">
     <div style="font-size:64px">💪</div>
@@ -1476,7 +1552,13 @@ function bilanTab(c,editable){
 
   const printBtn=(editable&&bilans.length)?`<button class="btn g full" style="margin-bottom:14px" data-act="print-bilan">🖨 Imprimer / PDF le bilan</button>`:"";
   return imcCard+form+printBtn+(rows||`<p class="muted" style="margin-bottom:14px">Aucun bilan enregistré.</p>`)
-    +`<div class="sec-head" style="margin-top:18px"><h2 style="font-size:16px">Photos</h2></div>`
+    +`<div class="sec-head" style="margin-top:18px"><h2 style="font-size:16px">Photos</h2>${(c.photos||[]).length>=2?`<button class="link" style="font-size:13px" data-act="toggle-compare">${S.photoCompare?"Masquer":"Avant / Après"}</button>`:""}</div>`
+    +((S.photoCompare&&(c.photos||[]).length>=2)?(()=>{
+      const ph=c.photos, a=ph[0], b2=ph[ph.length-1];
+      return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+        <div><img src="${a.url}" data-act="view-img" style="width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:12px;border:1px solid var(--line);cursor:pointer"><div class="photo-label">AVANT · ${frDate(a.date)}</div></div>
+        <div><img src="${b2.url}" data-act="view-img" style="width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:12px;border:1px solid var(--amber);cursor:pointer"><div class="photo-label" style="color:var(--amber)">APRÈS · ${frDate(b2.date)}</div></div>
+      </div>`;})():"")
     +photosTab(c,editable);
 }
 
@@ -1686,6 +1768,19 @@ document.addEventListener("click",e=>{
     case "add-se":{ if(!c) return; c.seances=c.seances||[]; c.seances.push({date:today(),fait:true,ressenti:val("se-ressenti"),note:val("se-note")}); c.seances.sort((x,y)=>y.date.localeCompare(x.date)); save(); render(); break; }
     case "toggle-se": if(c){ const i=+t.dataset.idx; c.seances[i].fait=!c.seances[i].fait; save(); render(); } break;
     case "del-se": if(c){ c.seances=(c.seances||[]).filter((_,i)=>i!==+t.dataset.idx); save(); render(); } break;
+    case "toggle-compare": S.photoCompare=!S.photoCompare; render(); break;
+    case "send-checkin":{ if(!c) return;
+      const g=k=>{const el2=document.getElementById("ci-"+k);return el2?+el2.value:3;};
+      const entry={date:today(),energie:g("energie"),sommeil:g("sommeil"),motivation:g("motivation"),courbatures:g("courbatures"),note:(val("ci-note")||"").trim()};
+      c.checkins=c.checkins||[]; c.checkins.push(entry);
+      if(c.checkins.length>30) c.checkins=c.checkins.slice(-30);
+      patchField(c,"checkins",err=>toast(err?"Erreur d'envoi":"Check-in envoyé — merci !"));
+      // Prévenir le coach dans la conversation
+      const moy=((entry.energie+entry.sommeil+entry.motivation+entry.courbatures)/4).toFixed(1);
+      c.messages=c.messages||[];
+      c.messages.push({from:"client",text:`📋 Check-in : énergie ${entry.energie}/5 · sommeil ${entry.sommeil}/5 · motivation ${entry.motivation}/5 · récup ${entry.courbatures}/5 (moy. ${moy})${entry.note?` — « ${entry.note} »`:""}`,date:new Date().toISOString(),lu:false});
+      patchField(c,"messages",()=>{});
+      render(); break; }
     case "install-help":{
       const isiOS=/iPhone|iPad|iPod/i.test(navigator.userAgent);
       const ov=document.createElement("div");
@@ -1745,6 +1840,8 @@ document.addEventListener("click",e=>{
   }
 });
 document.addEventListener("input",e=>{
+  const ci=e.target.closest("[data-ci]");
+  if(ci){ const lab=document.getElementById("ci-v-"+ci.dataset.ci); if(lab) lab.textContent=ci.value; return; }
   if(e.target.id==="cl-search"){
     S.q=e.target.value; const pos=e.target.selectionStart; render();
     const el2=document.getElementById("cl-search");
