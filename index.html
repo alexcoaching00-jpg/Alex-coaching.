@@ -388,7 +388,7 @@ window.supabase={
 </script>
 <script>
 "use strict";
-const APP_VERSION="v4.1 — 18/07/2026";
+const APP_VERSION="v4.2 — 18/07/2026";
 const SUPA_URL="https://xjmelkqtropownhfmuuh.supabase.co";
 const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqbWVsa3F0cm9wb3duaGZtdXVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3MDI3MTYsImV4cCI6MjA5OTI3ODcxNn0.mYoJx96xZ9SBaGky9EN8_MoTuSy7BY5D_aGB7JIFQyg";
 
@@ -1120,12 +1120,20 @@ function addModal(){
 
 /* ===== MODE SÉANCE GUIDÉ ===== */
 const WK={on:false,c:null,jour:"",exos:[],idx:0,serie:1,rest:0,restInt:null};
+
+/* écran maintenu allumé pendant la séance */
+let WAKE=null;
+async function wakeOn(){ try{ if("wakeLock" in navigator){ WAKE=await navigator.wakeLock.request("screen"); } }catch(e){} }
+function wakeOff(){ try{ if(WAKE){ WAKE.release(); WAKE=null; } }catch(e){} }
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"&&WK.on) wakeOn(); });
+
 function openWorkout(jour){
   const c=sel(); if(!c) return;
   const exos=(c.program||[]).filter(e=>(e.bloc||"")===jour);
   if(!exos.length) return;
   stopTimer();
   WK.on=true; WK.c=c; WK.jour=jour; WK.exos=exos; WK.idx=0; WK.serie=1; WK.rest=0;
+  wakeOn();
   let ov=document.getElementById("wk");
   if(!ov){ ov=document.createElement("div"); ov.id="wk"; document.body.appendChild(ov); }
   wkRender();
@@ -1134,6 +1142,7 @@ function closeWorkout(force){
   if(!force && !confirm("Quitter la séance en cours ?")) return;
   if(WK.restInt){ clearInterval(WK.restInt); WK.restInt=null; }
   WK.on=false;
+  wakeOff();
   const ov=document.getElementById("wk"); if(ov) ov.remove();
 }
 function wkSerieDone(){
@@ -1147,16 +1156,17 @@ function wkSerieDone(){
 }
 function wkStartRest(secs){
   if(WK.restInt) clearInterval(WK.restInt);
-  WK.rest=secs; wkRender();
+  WK.rest=secs; WK.restEnd=Date.now()+secs*1000; // horloge réelle
+  wkRender();
   WK.restInt=setInterval(()=>{
-    WK.rest--;
+    WK.rest=Math.max(0,Math.round((WK.restEnd-Date.now())/1000));
     const el=document.getElementById("wk-rest-n");
     if(el) el.textContent=Math.floor(WK.rest/60)+":"+String(WK.rest%60).padStart(2,"0");
     if(WK.rest<=0){
       clearInterval(WK.restInt); WK.restInt=null;
-      alarm(4); WK.rest=0; wkRender();
+      alarm(4); wkRender();
     }
-  },1000);
+  },500);
 }
 function wkSkipRest(){
   if(WK.restInt){ clearInterval(WK.restInt); WK.restInt=null; }
@@ -1185,6 +1195,7 @@ function wkFinish(){
   alarm(3);
   confetti();
   WK.on=false;
+  wakeOff();
   render();
 }
 function wkRender(){
@@ -1281,16 +1292,15 @@ function startTimer(exId,secs){
   if(TIMER.exId===exId){ stopTimer(); return; } // 2e appui = annuler
   stopTimer();
   TIMER.exId=exId;
-  let left=secs;
-  const b=document.getElementById("tmr-"+exId);
-  const paint=()=>{ const bb=document.getElementById("tmr-"+exId);
+  TIMER.end=Date.now()+secs*1000; // horloge réelle : fiable même écran verrouillé
+  const paint=left=>{ const bb=document.getElementById("tmr-"+exId);
     if(bb){ bb.textContent="⏱ "+Math.floor(left/60)+":"+String(left%60).padStart(2,"0"); bb.classList.add("run"); } };
-  paint();
+  paint(secs);
   TIMER.int=setInterval(()=>{
-    left--;
+    const left=Math.max(0,Math.round((TIMER.end-Date.now())/1000));
     if(left<=0){ stopTimer(); beep(); toast("Repos terminé — c'est reparti !"); return; }
-    paint();
-  },1000);
+    paint(left);
+  },500);
 }
 
 /* forfait : séances restantes */
@@ -1739,6 +1749,7 @@ function programmesView(){
       <div style="display:flex;gap:14px;margin-top:10px">
         <button class="link" style="font-size:13px" data-act="tpl-edit" data-id="${t.id}">✏️ Modifier</button>
         <button class="link" style="font-size:13px" data-act="tpl-pdf" data-id="${t.id}">🖨 PDF</button>
+        <button class="link" style="font-size:13px" data-act="tpl-clone" data-id="${t.id}">⧉ Dupliquer</button>
       </div>
     </div>`;
   }).join("");
@@ -2163,6 +2174,13 @@ document.addEventListener("click",e=>{
       target.program=(t2.program||[]).map(e=>({...e,id:uid(),historique:[]}));
       sb.from("clients").update(lightRow(target)).eq("id",target.id).then(({error})=>{
         toast(error?"Erreur d'envoi":"Programme envoyé à "+target.nom);
+      });
+      break; }
+    case "tpl-clone":{ const t2=S.templates.find(x=>x.id===t.dataset.id); if(!t2) break;
+      const copy={nom:t2.nom+" (copie)",program:(t2.program||[]).map(e=>({...e,id:uid(),historique:[]}))};
+      sb.from("templates").insert(copy).select().single().then(({data,error})=>{
+        if(error){ alert("Erreur : "+error.message); return; }
+        if(data){ S.templates.push({...copy,...data}); toast("Programme dupliqué"); render(); }
       });
       break; }
     case "tpl-pdf":{ const t2=S.templates.find(x=>x.id===t.dataset.id); if(t2) printProgram(t2); break; }
