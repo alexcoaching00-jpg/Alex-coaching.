@@ -233,7 +233,7 @@
 /* Auto-destruction du splash — indépendant de l'appli, ne peut pas bloquer */
 setTimeout(function(){var sp=document.getElementById('splash');if(sp){sp.classList.add('out');setTimeout(function(){if(sp.parentNode)sp.parentNode.removeChild(sp);},600);}},1800);
 </script>
-<datalist id="exos-fr"><option value="Squat"></option><option value="Squat gobelet"></option><option value="Front squat"></option><option value="Presse à cuisses"></option><option value="Hack squat"></option><option value="Fentes marchées"></option><option value="Fentes bulgares"></option><option value="Leg extension"></option><option value="Leg curl allongé"></option><option value="Soulevé de terre"></option><option value="Soulevé de terre roumain"></option><option value="Hip thrust"></option><option value="Pont fessier"></option><option value="Abduction machine"></option><option value="Mollets debout"></option><option value="Mollets assis"></option><option value="Développé couché"></option><option value="Développé incliné haltères"></option><option value="Développé militaire"></option><option value="Développé haltères assis"></option><option value="Élévations latérales"></option><option value="Élévations frontales"></option><option value="Oiseau (buste penché)"></option><option value="Pompes"></option><option value="Dips"></option><option value="Écarté couché haltères"></option><option value="Écarté à la poulie"></option><option value="Tirage vertical poulie"></option><option value="Tractions"></option><option value="Tractions assistées"></option><option value="Rowing barre"></option><option value="Rowing haltère unilatéral"></option><option value="Rowing poulie basse"></option><option value="Tirage horizontal machine"></option><option value="Pull-over"></option><option value="Face pull"></option><option value="Shrugs"></option><option value="Curl biceps barre"></option><option value="Curl haltères"></option><option value="Curl marteau"></option><option value="Curl pupitre"></option><option value="Extension triceps poulie"></option><option value="Barre au front"></option><option value="Extension nuque haltère"></option><option value="Gainage planche"></option><option value="Gainage latéral"></option><option value="Crunch"></option><option value="Relevés de jambes"></option><option value="Mountain climbers"></option><option value="Russian twist"></option><option value="Roulette abdos"></option><option value="Marche du fermier"></option><option value="Suitcase carry"></option><option value="Kettlebell swing"></option><option value="Burpees"></option><option value="Rameur"></option><option value="Vélo (ergomètre)"></option><option value="SkiErg"></option><option value="Tapis de course"></option><option value="Corde à sauter"></option><option value="Box jump"></option><option value="Good morning"></option><option value="Hyperextensions (banc lombaire)"></option><option value="Superman"></option></datalist>
+<datalist id="exos-fr"></datalist>
 <div id="root"><div class="center"><p style="color:#666;font-family:Inter,sans-serif;font-size:14px">Connexion…</p></div></div>
 
 <script>
@@ -385,7 +385,7 @@ window.supabase={
 </script>
 <script>
 "use strict";
-const APP_VERSION="v3.7 — 18/07/2026";
+const APP_VERSION="v3.8 — 18/07/2026";
 const SUPA_URL="https://xjmelkqtropownhfmuuh.supabase.co";
 const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqbWVsa3F0cm9wb3duaGZtdXVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3MDI3MTYsImV4cCI6MjA5OTI3ODcxNn0.mYoJx96xZ9SBaGky9EN8_MoTuSy7BY5D_aGB7JIFQyg";
 
@@ -580,7 +580,8 @@ function authScreen(){
       <p style="text-align:center;font-family:'Bebas Neue';font-size:13px;letter-spacing:.28em;color:var(--amber);margin:-6px 0 18px">CHANGE TON CORPS. TRANSFORME TA VIE.</p>
     <p class="lead">${isSignup?"Créez votre accès client.":"Connectez-vous."}</p>
     ${S.authErr?`<div class="autherr">${esc(S.authErr)}</div>`:""}
-    <label class="fld"><span>E-mail</span><input id="au-email" type="email" autocomplete="email" autocapitalize="off" placeholder="vous@exemple.fr"></label>
+    ${isSignup&&S.inviteEmail?`<div style="background:rgba(184,134,47,.12);border:1px solid rgba(184,134,47,.4);border-radius:12px;padding:10px 12px;margin-bottom:12px;font-size:13px;color:var(--amber);text-align:center">🎟 Invitation de ton coach — ton adresse est déjà remplie, choisis juste un mot de passe.</div>`:""}
+    <label class="fld"><span>E-mail</span><input id="au-email" type="email" autocomplete="email" autocapitalize="off" placeholder="vous@exemple.fr" value="${isSignup&&S.inviteEmail?esc(S.inviteEmail):""}"></label>
     <label class="fld"><span>Mot de passe</span><input id="au-pw" type="password" autocomplete="${isSignup?'new-password':'current-password'}" placeholder="••••••••"></label>
     ${isSignup?`<label class="fld"><span>Confirmer le mot de passe</span><input id="au-pw2" type="password" autocomplete="new-password" placeholder="••••••••"></label>`:""}
     <button class="btn p full" data-act="auth-submit" data-mode="${isSignup?'signup':'login'}" ${S.authBusy?'disabled':''}>${S.authBusy?"Patientez…":(isSignup?"Créer mon accès":"Se connecter")}</button>
@@ -830,8 +831,12 @@ function infosTab(c){
     <div class="panel" style="margin-bottom:14px">
       <div class="ph">Accès client</div>
       <label class="fld"><span>E-mail du client</span><input data-bind="clientEmail" type="email" value="${esc(c.clientEmail||"")}" placeholder="client@exemple.fr" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
-      <button class="btn p full" data-act="mail-invite">✉️ Envoyer l'invitation par e-mail</button>
-      <button class="link full" data-act="copy-invite" style="margin-top:8px;font-size:13px">ou copier le message (SMS / WhatsApp)</button>
+      <button class="btn p full" data-act="share-invite">📤 Partager l'invitation</button>
+      <div style="display:flex;justify-content:center;gap:16px;margin-top:8px">
+        <button class="link" style="font-size:13px" data-act="mail-invite">✉️ E-mail</button>
+        <button class="link" style="font-size:13px" data-act="copy-invite">📋 Copier</button>
+        <button class="link" style="font-size:13px" data-act="qr-invite">📱 QR code</button>
+      </div>
       <p class="muted" style="font-size:12.5px;margin-top:8px">Le client s'inscrit avec cette adresse via « Créer mon accès » et accède uniquement à son espace.</p>
     </div>
     <div class="r2">
@@ -904,12 +909,13 @@ function programme(c,editable){
   }
   const form=editable?`
     <div class="panel"><div class="ph">Nouvel exercice</div>
-      <label class="fld"><span>Exercice</span><input id="ex-nom" list="exos-fr" placeholder="Ex. Presse à cuisses"></label>
+      ${exoPicker("ex-nom")}
+      <label class="fld"><span>Exercice (ou saisie libre)</span><input id="ex-nom" list="exos-fr" placeholder="Ex. Presse à cuisses"></label>
       <div class="r2"><label class="fld"><span>Séries</span><input id="ex-series" type="number" min="1" value="3"></label>
       <label class="fld"><span>Reps</span><input id="ex-reps" value="12"></label></div>
       <div class="r2"><label class="fld"><span>Charge</span><input id="ex-charge" placeholder="40 kg"></label>
       <label class="fld"><span>Repos</span><input id="ex-repos" placeholder="60 s"></label></div>
-      <div class="r2"><label class="fld"><span>Jour</span><select id="ex-bloc"><option value="">—</option><option>Lundi</option><option>Mardi</option><option>Mercredi</option><option>Jeudi</option><option>Vendredi</option><option>Samedi</option><option>Dimanche</option></select></label>
+      <div class="r2"><label class="fld"><span>Jour</span><select id="ex-bloc"><option value="">—</option><option>Lundi</option><option>Mardi</option><option>Mercredi</option><option>Jeudi</option><option>Vendredi</option><option>Samedi</option><option>Dimanche</option><option value="A">Séance A</option><option value="B">Séance B</option><option value="C">Séance C</option></select></label>
       <label class="fld"><span>RIR cible</span><select id="ex-rir"><option value="">—</option><option>0-1</option><option>1-2</option><option>2-3</option><option>3-4</option></select></label></div>
       <label class="fld"><span>Consigne (optionnel)</span><input id="ex-note" placeholder="Amplitude contrôlée…"></label>
       <label class="fld"><span>Équivalence si trop difficile (optionnel)</span><input id="ex-alt" placeholder="Ex. Squat gobelet → Presse à cuisses"></label>
@@ -1374,11 +1380,15 @@ function messagesTab(c,isCoach){
 
 
 /* texte + mailto d'invitation client */
+function inviteUrl(c){
+  const email=(c.clientEmail||"").trim();
+  return location.origin+location.pathname+(email?"#invite="+encodeURIComponent(email):"");
+}
 function inviteText(c){
   const email=(c.clientEmail||"").trim(); if(!email) return null;
   const prenom=(c.nom||"").split(" ")[0];
-  const url=location.origin+location.pathname;
-  return `Salut ${prenom} ! 💪\nVoici ton espace client Alex Coaching :\n${url}\n\n1. Ouvre le lien\n2. Appuie sur « Créer mon accès »\n3. Inscris-toi avec ton adresse : ${email}\n\nAstuce : une fois la page ouverte, ajoute-la à ton écran d'accueil (Partager → « Sur l'écran d'accueil ») pour l'avoir comme une vraie appli. 📲\n\nTu y trouveras ton programme, ta progression et notre messagerie. À très vite !`;
+  const url=inviteUrl(c);
+  return `Salut ${prenom} ! 💪\nVoici ton espace client Alex Coaching :\n${url}\n\n1. Ouvre le lien\n2. Choisis ton mot de passe et appuie sur « Créer mon accès » (ton adresse ${email} est déjà remplie)\n\nAstuce : une fois la page ouverte, ajoute-la à ton écran d'accueil (Partager → « Sur l'écran d'accueil ») pour l'avoir comme une vraie appli. 📲\n\nTu y trouveras ton programme, ta progression et notre messagerie. À très vite !`;
 }
 function inviteMailto(c){
   const email=(c.clientEmail||"").trim(); if(!email) return null;
@@ -1592,6 +1602,28 @@ function nutritionTab(c,editable){
 }
 
 
+
+/* ===== BASE D'EXERCICES (par groupe musculaire) ===== */
+const EXOS_GROUPES=[
+["Jambes — Quadriceps",["Squat barre","Squat gobelet","Front squat","Squat sumo","Squat bulgare","Box squat","Presse à cuisses","Hack squat machine","Leg extension","Fentes marchées","Fentes arrières","Fentes latérales","Step-ups sur banc","Sissy squat","Squat pistol assisté","Jump squat"]],
+["Jambes — Ischios / Fessiers",["Soulevé de terre","Soulevé de terre roumain","Soulevé de terre sumo","Soulevé de terre jambes tendues","Hip thrust","Pont fessier","Pont fessier unilatéral","Leg curl allongé","Leg curl assis","Leg curl debout","Nordic curl","Good morning","Kickback poulie","Abduction machine","Adduction machine","Hyperextensions (banc lombaire)","Kettlebell swing","Pull-through poulie"]],
+["Mollets",["Mollets debout","Mollets assis","Mollets à la presse","Mollets unilatéral"]],
+["Pectoraux",["Développé couché","Développé couché haltères","Développé incliné barre","Développé incliné haltères","Développé décliné","Développé machine convergente","Écarté couché haltères","Écarté incliné haltères","Écarté à la poulie (crossover)","Pec deck","Pompes","Pompes lestées","Pompes déclinées","Pompes prise serrée","Dips pectoraux"]],
+["Dos",["Tractions","Tractions assistées","Tractions supination (chin-up)","Tirage vertical poulie","Tirage vertical prise serrée","Rowing barre","Rowing haltère unilatéral","Rowing poulie basse","Rowing T-bar","Tirage horizontal machine","Pull-over poulie","Pull-over haltère","Shrugs haltères","Shrugs barre","Rack pull","Face pull","Oiseau (reverse fly)","Superman","Extension au banc lombaire"]],
+["Épaules",["Développé militaire","Développé haltères assis","Développé Arnold","Élévations latérales","Élévations latérales poulie","Élévations frontales","Oiseau buste penché","Reverse pec deck","Tirage menton","Développé unilatéral haltère","Pompes piquées (pike push-up)"]],
+["Biceps",["Curl barre","Curl barre EZ","Curl haltères","Curl marteau","Curl pupitre","Curl incliné","Curl concentration","Curl poulie basse","Curl 21s"]],
+["Triceps",["Extension triceps poulie (pushdown)","Extension corde à la poulie","Barre au front","Extension nuque haltère","Kickback triceps","Dips triceps sur banc","Dips barres parallèles","Développé couché prise serrée"]],
+["Abdos / Gainage",["Gainage planche","Gainage latéral","Planche dynamique","Crunch","Crunch à la poulie","Relevés de jambes suspendu","Relevés de jambes au sol","Mountain climbers","Russian twist","Roulette abdos (ab wheel)","Dead bug","Bird dog","Hollow hold","Pallof press","Toes to bar","V-ups","Sit-ups"]],
+["Cardio / Fonctionnel",["Burpees","Marche du fermier","Suitcase carry","Overhead carry","Poussée de traîneau (sled)","Battle ropes","Wall balls","Thruster","Clean haltères","Snatch kettlebell","Box jump","Sprint","Rameur","Assault bike","Vélo (ergomètre)","SkiErg","Tapis de course incliné","Corde à sauter","Montées d'escaliers (stepmill)","Turkish get-up"]],
+["Mobilité / Étirements",["Étirement ischios","Étirement quadriceps","Étirement fessiers (pigeon)","Ouverture de hanches 90/90","Mobilité épaules au bâton","Cat-cow","Chien tête en bas","Auto-massage foam roller"]]
+];
+function exoPicker(targetId){
+  return `<label class="fld"><span>Choisir dans la liste (${EXOS_GROUPES.reduce((t2,g)=>t2+g[1].length,0)} exercices)</span>
+    <select data-pick="${targetId}"><option value="">— Parcourir par groupe musculaire —</option>
+    ${EXOS_GROUPES.map(([g,list])=>`<optgroup label="${g}">${list.map(e=>`<option value="${e}">${e}</option>`).join("")}</optgroup>`).join("")}
+    </select></label>`;
+}
+
 /* ===== BIBLIOTHÈQUE DE PROGRAMMES ===== */
 function tplExoCard(e,i,editing){
   return `<div class="card"><div style="display:flex;align-items:flex-start;justify-content:space-between">
@@ -1605,35 +1637,54 @@ function tplExoCard(e,i,editing){
       ${e.note?`<div class="exnote">${esc(e.note)}</div>`:""}
       ${e.alt?`<div class="exd" style="color:var(--amber);font-size:12.5px">↔ ${esc(e.alt)}</div>`:""}
     </div>
-    ${editing?`<button class="x" data-act="tpl-del-ex" data-idx="${i}">×</button>`:""}
+    ${editing?`<span style="display:flex;gap:4px"><button class="x" style="font-size:14px" data-act="tpl-edit-ex" data-idx="${i}" title="Modifier">✏️</button><button class="x" data-act="tpl-del-ex" data-idx="${i}">×</button></span>`:""}
   </div></div>`;
 }
 function tplEditor(){
   const t=S.tplEdit;
-  const JOURS2=["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"];
+  const d=t.draft||{};
+  const JOURS2=["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche","A","B","C"];
+  const label=b=>!b?"Autres exercices":(b.length<=2?"Séance "+b:b);
   const rank=b=>{if(!b)return 100;const j=JOURS2.indexOf(b);return j>=0?j:50;};
-  const sorted=[...t.program].map((e,i)=>({e,i})).sort((a,b2)=>rank(a.e.bloc)-rank(b2.e.bloc));
+  // Groupes par séance
+  const groups={};
+  t.program.forEach((e,i)=>{const b2=e.bloc||"";(groups[b2]=groups[b2]||[]).push({e,i});});
+  const keys=Object.keys(groups).sort((a,b2)=>rank(a)-rank(b2));
+  const groupsHtml=keys.map(b2=>{
+    const others=JOURS2.filter(j=>j!==b2);
+    const safe=b2||"none";
+    return `
+    <div class="sec-head" style="margin-top:10px;flex-wrap:wrap;gap:6px">
+      <h2 style="font-size:15px;color:var(--red)">${label(b2)} <span style="color:var(--grey2);font-weight:400;font-size:12px">· ${groups[b2].length} exo${groups[b2].length>1?"s":""}</span></h2>
+      ${b2?`<span style="display:flex;align-items:center;gap:6px">
+        <select id="dl-${safe}" style="font-size:12px;padding:5px 26px 5px 8px;border-radius:8px;background:var(--ink2);color:var(--white);border:1px solid var(--line)">${others.map(j=>`<option value="${j}">${j.length<=2?"Séance "+j:j}</option>`).join("")}</select>
+        <button class="link" style="font-size:12px" data-act="tpl-dup-day" data-from="${esc(b2)}">⧉ Copier vers</button>
+      </span>`:""}
+    </div>
+    ${groups[b2].map(({e,i})=>tplExoCard(e,i,true)).join("")}`;
+  }).join("");
   return `
     <div class="sec-head"><h2>${t.id?"Modifier le programme":"Nouveau programme"}</h2><button class="link" data-act="tpl-editor-cancel">Annuler</button></div>
     <label class="fld"><span>Nom du programme</span><input id="tpl-nom" placeholder="Ex. Full body débutant — 3 séances" value="${esc(t.nom||"")}"></label>
-    ${sorted.length?sorted.map(({e,i})=>tplExoCard(e,i,true)).join(""):`<p class="muted" style="margin-bottom:12px">Aucun exercice — ajoutez-en ci-dessous.</p>`}
+    ${t.program.length?groupsHtml:`<p class="muted" style="margin-bottom:12px">Aucun exercice — ajoutez-en ci-dessous en choisissant son jour ou sa séance (A/B/C).</p>`}
     <div class="panel" style="margin-bottom:14px"><div class="ph">Ajouter un exercice</div>
-      <label class="fld"><span>Nom</span><input id="tex-nom" list="exos-fr" placeholder="Squat gobelet"></label>
+      ${exoPicker("tex-nom")}
+      <label class="fld"><span>Nom (ou saisie libre)</span><input id="tex-nom" list="exos-fr" placeholder="Squat gobelet" value="${esc(d.nom||"")}"></label>
       <div class="r2">
-        <label class="fld"><span>Séries</span><input id="tex-series" inputmode="numeric" placeholder="3"></label>
-        <label class="fld"><span>Répétitions</span><input id="tex-reps" placeholder="8-10"></label>
+        <label class="fld"><span>Séries</span><input id="tex-series" inputmode="numeric" placeholder="3" value="${d.series||""}"></label>
+        <label class="fld"><span>Répétitions</span><input id="tex-reps" placeholder="8-10" value="${esc(d.reps||"")}"></label>
       </div>
       <div class="r2">
-        <label class="fld"><span>Charge</span><input id="tex-charge" placeholder="40 kg"></label>
-        <label class="fld"><span>Repos</span><input id="tex-repos" placeholder="90 s"></label>
+        <label class="fld"><span>Charge</span><input id="tex-charge" placeholder="40 kg" value="${esc(d.charge||"")}"></label>
+        <label class="fld"><span>Repos</span><input id="tex-repos" placeholder="90 s" value="${esc(d.repos||"")}"></label>
       </div>
       <div class="r2">
-        <label class="fld"><span>Jour</span><select id="tex-bloc"><option value="">—</option>${JOURS2.map(j=>`<option>${j}</option>`).join("")}</select></label>
-        <label class="fld"><span>RIR cible</span><select id="tex-rir"><option value="">—</option><option>0-1</option><option>1-2</option><option>2-3</option><option>3-4</option></select></label>
+        <label class="fld"><span>Jour / séance</span><select id="tex-bloc"><option value="">—</option>${JOURS2.map(j=>`<option value="${j}" ${d.bloc===j?"selected":""}>${j.length<=2?"Séance "+j:j}</option>`).join("")}</select></label>
+        <label class="fld"><span>RIR cible</span><select id="tex-rir"><option value="">—</option>${["0-1","1-2","2-3","3-4"].map(r2=>`<option ${d.rir===r2?"selected":""}>${r2}</option>`).join("")}</select></label>
       </div>
-      <label class="fld"><span>Consigne (optionnel)</span><input id="tex-note" placeholder="Amplitude contrôlée…"></label>
-      <label class="fld"><span>Équivalence si trop difficile (optionnel)</span><input id="tex-alt" placeholder="Presse à cuisses"></label>
-      <button class="btn g full" data-act="tpl-add-ex">+ Ajouter l'exercice</button>
+      <label class="fld"><span>Consigne (optionnel)</span><input id="tex-note" placeholder="Amplitude contrôlée…" value="${esc(d.note||"")}"></label>
+      <label class="fld"><span>Équivalence si trop difficile (optionnel)</span><input id="tex-alt" placeholder="Presse à cuisses" value="${esc(d.alt||"")}"></label>
+      <button class="btn g full" data-act="tpl-add-ex">${d.nom?"✔ Valider la modification":"+ Ajouter l'exercice"}</button>
     </div>
     <button class="btn p full" data-act="tpl-editor-save">💾 Enregistrer le programme</button>`;
 }
@@ -1948,6 +1999,29 @@ document.addEventListener("click",e=>{
     case "auth-switch": S.authView=t.dataset.to; S.authErr=""; render(); break;
     case "auth-submit": doAuth(t.dataset.mode); break;
     case "logout": if(sb) sb.auth.signOut(); break;
+    case "share-invite":{ if(!c) return;
+      const msg=inviteText(c);
+      if(!msg){ alert("Renseigne d'abord l'adresse e-mail du client ci-dessus."); return; }
+      if(navigator.share){ navigator.share({title:"Alex Coaching",text:msg}).catch(()=>{}); }
+      else if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(msg).then(()=>toast("Message copié — colle-le où tu veux")); }
+      else prompt("Copie ce message :",msg);
+      break; }
+    case "qr-invite":{ if(!c) return;
+      const email=(c.clientEmail||"").trim();
+      if(!email){ alert("Renseigne d'abord l'adresse e-mail du client ci-dessus."); return; }
+      const u=inviteUrl(c);
+      const ov=document.createElement("div");
+      ov.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:200;display:flex;align-items:center;justify-content:center;padding:22px";
+      ov.innerHTML=`<div style="background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px;max-width:340px;width:100%;text-align:center">
+        <h3 style="font-family:'Bebas Neue';font-size:22px;letter-spacing:.05em;color:var(--white);margin-bottom:10px">📱 Invitation de ${esc((c.nom||"").split(" ")[0])}</h3>
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=280x280&margin=10&data=${encodeURIComponent(u)}" alt="QR code" style="width:100%;max-width:260px;border-radius:12px;background:#fff;padding:6px" onerror="this.style.display='none'">
+        <p style="font-size:13px;color:var(--white2);margin:12px 0 6px">Le client scanne ce code avec l'appareil photo de son téléphone : il arrive sur la page d'inscription, <b style="color:var(--amber)">son adresse déjà remplie</b>.</p>
+        <p style="font-size:11px;color:var(--grey2);word-break:break-all;margin-bottom:14px">${esc(u)}</p>
+        <button class="btn p full" data-close-install>Fermer</button>
+      </div>`;
+      ov.addEventListener("click",ev=>{ if(ev.target===ov||ev.target.closest("[data-close-install]")) ov.remove(); });
+      document.body.appendChild(ov);
+      break; }
     case "mail-invite":{ if(!c) return;
       const u=inviteMailto(c);
       if(!u){ alert("Renseigne d'abord l'adresse e-mail du client ci-dessus."); return; }
@@ -1998,12 +2072,31 @@ document.addEventListener("click",e=>{
     case "tpl-editor-cancel": S.tplEdit=null; render(); break;
     case "tpl-add-ex":{ if(!S.tplEdit) break;
       const nom=val("tex-nom").trim(); if(!nom) break;
-      S.tplEdit.program.push({id:uid(),nom,series:+val("tex-series")||3,reps:val("tex-reps"),charge:val("tex-charge"),repos:val("tex-repos"),note:val("tex-note"),alt:val("tex-alt")||"",bloc:val("tex-bloc")||"",rir:val("tex-rir")||"",historique:[]});
+      const keepId=(S.tplEdit.draft&&S.tplEdit.draft.id)||uid();
+      S.tplEdit.program.push({id:keepId,nom,series:+val("tex-series")||3,reps:val("tex-reps"),charge:val("tex-charge"),repos:val("tex-repos"),note:val("tex-note"),alt:val("tex-alt")||"",bloc:val("tex-bloc")||"",rir:val("tex-rir")||"",historique:[]});
+      S.tplEdit.draft=null;
       const keepNom=val("tpl-nom"); S.tplEdit.nom=keepNom;
       render(); break; }
     case "tpl-del-ex":{ if(!S.tplEdit) break;
       S.tplEdit.nom=val("tpl-nom");
       S.tplEdit.program.splice(+t.dataset.idx,1); render(); break; }
+    case "tpl-edit-ex":{ if(!S.tplEdit) break;
+      S.tplEdit.nom=val("tpl-nom");
+      const ex2=S.tplEdit.program.splice(+t.dataset.idx,1)[0];
+      if(ex2) S.tplEdit.draft={...ex2};
+      render();
+      const f2=document.getElementById("tex-nom"); if(f2) f2.scrollIntoView({behavior:"smooth",block:"center"});
+      break; }
+    case "tpl-dup-day":{ if(!S.tplEdit) break;
+      S.tplEdit.nom=val("tpl-nom");
+      const from=t.dataset.from;
+      const selEl=document.getElementById("dl-"+from);
+      const target=selEl&&selEl.value; if(!target||target===from) break;
+      const copies=S.tplEdit.program.filter(e=>(e.bloc||"")===from).map(e=>({...e,id:uid(),bloc:target,historique:[]}));
+      if(!copies.length) break;
+      S.tplEdit.program=S.tplEdit.program.concat(copies);
+      toast(`${copies.length} exercice${copies.length>1?"s":""} copié${copies.length>1?"s":""} vers ${target.length<=2?"Séance "+target:target}`);
+      render(); break; }
     case "tpl-editor-save":{ if(!S.tplEdit) break;
       const nom=(val("tpl-nom")||"").trim();
       if(!nom){ alert("Donne un nom au programme."); break; }
@@ -2210,6 +2303,10 @@ document.addEventListener("input",e=>{
   const c=sel(); if(!c) return; c[el.dataset.bind]=el.value; save();
 });
 document.addEventListener("change",e=>{
+  const pk=e.target.closest("[data-pick]");
+  if(pk){ const inp=document.getElementById(pk.dataset.pick);
+    if(inp&&pk.value){ inp.value=pk.value; pk.value=""; }
+    return; }
   if(e.target.id==="imp-file"){
     const f=e.target.files&&e.target.files[0]; if(!f) return;
     const rd=new FileReader();
@@ -2289,6 +2386,12 @@ window.addEventListener("beforeunload",e=>{
 function bootApp(){
   setupPWA();
   updateOnlineBar();
+  try{
+    const mi=location.hash.match(/#invite=([^&]+)/);
+    if(mi){ S.inviteEmail=decodeURIComponent(mi[1]); S.authView="signup";
+      history.replaceState(null,"",location.pathname+location.search); }
+  }catch(e){}
+  try{ const dl=document.getElementById("exos-fr"); if(dl) dl.innerHTML=EXOS_GROUPES.map(g=>g[1].map(e=>`<option value="${e}"></option>`).join("")).join(""); }catch(e){}
   const spImg=document.getElementById('splash-img'); if(spImg) spImg.src=LOGO;
   sb = window.supabase.createClient(SUPA_URL, SUPA_KEY);
   render();
