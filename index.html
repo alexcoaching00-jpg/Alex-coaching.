@@ -233,6 +233,7 @@
 /* Auto-destruction du splash — indépendant de l'appli, ne peut pas bloquer */
 setTimeout(function(){var sp=document.getElementById('splash');if(sp){sp.classList.add('out');setTimeout(function(){if(sp.parentNode)sp.parentNode.removeChild(sp);},600);}},1800);
 </script>
+<datalist id="exos-fr"><option value="Squat"></option><option value="Squat gobelet"></option><option value="Front squat"></option><option value="Presse à cuisses"></option><option value="Hack squat"></option><option value="Fentes marchées"></option><option value="Fentes bulgares"></option><option value="Leg extension"></option><option value="Leg curl allongé"></option><option value="Soulevé de terre"></option><option value="Soulevé de terre roumain"></option><option value="Hip thrust"></option><option value="Pont fessier"></option><option value="Abduction machine"></option><option value="Mollets debout"></option><option value="Mollets assis"></option><option value="Développé couché"></option><option value="Développé incliné haltères"></option><option value="Développé militaire"></option><option value="Développé haltères assis"></option><option value="Élévations latérales"></option><option value="Élévations frontales"></option><option value="Oiseau (buste penché)"></option><option value="Pompes"></option><option value="Dips"></option><option value="Écarté couché haltères"></option><option value="Écarté à la poulie"></option><option value="Tirage vertical poulie"></option><option value="Tractions"></option><option value="Tractions assistées"></option><option value="Rowing barre"></option><option value="Rowing haltère unilatéral"></option><option value="Rowing poulie basse"></option><option value="Tirage horizontal machine"></option><option value="Pull-over"></option><option value="Face pull"></option><option value="Shrugs"></option><option value="Curl biceps barre"></option><option value="Curl haltères"></option><option value="Curl marteau"></option><option value="Curl pupitre"></option><option value="Extension triceps poulie"></option><option value="Barre au front"></option><option value="Extension nuque haltère"></option><option value="Gainage planche"></option><option value="Gainage latéral"></option><option value="Crunch"></option><option value="Relevés de jambes"></option><option value="Mountain climbers"></option><option value="Russian twist"></option><option value="Roulette abdos"></option><option value="Marche du fermier"></option><option value="Suitcase carry"></option><option value="Kettlebell swing"></option><option value="Burpees"></option><option value="Rameur"></option><option value="Vélo (ergomètre)"></option><option value="SkiErg"></option><option value="Tapis de course"></option><option value="Corde à sauter"></option><option value="Box jump"></option><option value="Good morning"></option><option value="Hyperextensions (banc lombaire)"></option><option value="Superman"></option></datalist>
 <div id="root"><div class="center"><p style="color:#666;font-family:Inter,sans-serif;font-size:14px">Connexion…</p></div></div>
 
 <script>
@@ -384,7 +385,7 @@ window.supabase={
 </script>
 <script>
 "use strict";
-const APP_VERSION="v3.6 — 18/07/2026";
+const APP_VERSION="v3.7 — 18/07/2026";
 const SUPA_URL="https://xjmelkqtropownhfmuuh.supabase.co";
 const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqbWVsa3F0cm9wb3duaGZtdXVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3MDI3MTYsImV4cCI6MjA5OTI3ODcxNn0.mYoJx96xZ9SBaGky9EN8_MoTuSy7BY5D_aGB7JIFQyg";
 
@@ -435,8 +436,8 @@ const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;"
 const val=id=>{const e=document.getElementById(id);return e?e.value:"";};
 const sel=()=>S.clients.find(c=>c.id===S.selectedId)||null;
 
-const rowToClient=r=>({id:r.id,nom:r.nom,objectif:r.objectif||"",formule:r.formule||FORMULES[0],niveau:r.niveau||NIVEAUX[0],notes:r.notes||"",clientEmail:r.client_email||"",dateDebut:r.date_debut||"",objectifPoids:r.objectif_poids||null,forfaitTotal:r.forfait_total||null,prochainRdv:r.prochain_rdv||"",programmeDebut:r.programme_debut||"",programmeFin:r.programme_fin||"",tailleCm:r.taille_cm||null,bilans:r.bilans||[],nutrition:r.nutrition||null,checkins:r.checkins||[],program:r.program||[],mesures:r.mesures||[],seances:r.seances||[],messages:r.messages||[],photos:r.photos||[]});
-const clientToRow=c=>({nom:c.nom,objectif:c.objectif||null,formule:c.formule||null,niveau:c.niveau||null,notes:c.notes||null,client_email:(c.clientEmail||"").trim().toLowerCase()||null,date_debut:c.dateDebut||null,objectif_poids:c.objectifPoids||null,forfait_total:c.forfaitTotal||null,prochain_rdv:c.prochainRdv||null,programme_debut:c.programmeDebut||null,programme_fin:c.programmeFin||null,taille_cm:c.tailleCm||null,bilans:c.bilans||[],nutrition:c.nutrition||null,checkins:c.checkins||[],program:c.program||[],mesures:c.mesures||[],seances:c.seances||[],messages:c.messages||[],photos:c.photos||[],updated_at:new Date().toISOString()});
+const rowToClient=r=>({id:r.id,nom:r.nom,objectif:r.objectif||"",formule:r.formule||FORMULES[0],niveau:r.niveau||NIVEAUX[0],notes:r.notes||"",clientEmail:r.client_email||"",dateDebut:r.date_debut||"",objectifPoids:r.objectif_poids||null,forfaitTotal:r.forfait_total||null,prochainRdv:r.prochain_rdv||"",programmeDebut:r.programme_debut||"",programmeFin:r.programme_fin||"",tailleCm:r.taille_cm||null,bilans:r.bilans||[],nutrition:r.nutrition||null,checkins:r.checkins||[],paiements:r.paiements||[],program:r.program||[],mesures:r.mesures||[],seances:r.seances||[],messages:r.messages||[],photos:r.photos||[]});
+const clientToRow=c=>({nom:c.nom,objectif:c.objectif||null,formule:c.formule||null,niveau:c.niveau||null,notes:c.notes||null,client_email:(c.clientEmail||"").trim().toLowerCase()||null,date_debut:c.dateDebut||null,objectif_poids:c.objectifPoids||null,forfait_total:c.forfaitTotal||null,prochain_rdv:c.prochainRdv||null,programme_debut:c.programmeDebut||null,programme_fin:c.programmeFin||null,taille_cm:c.tailleCm||null,bilans:c.bilans||[],nutrition:c.nutrition||null,checkins:c.checkins||[],paiements:c.paiements||[],program:c.program||[],mesures:c.mesures||[],seances:c.seances||[],messages:c.messages||[],photos:c.photos||[],updated_at:new Date().toISOString()});
 
 let toastT=null;
 function toast(msg){const t=document.getElementById("toast");if(!t)return;t.textContent=msg;t.style.display="block";clearTimeout(toastT);toastT=setTimeout(()=>t.style.display="none",1200);}
@@ -660,6 +661,7 @@ function dashboard(){
       <div class="stat"><div class="v">${cs.length}</div><div class="l">Clients</div></div>
       <div class="stat"><div class="v">${totalSeances}</div><div class="l">Séances</div></div>
       <div class="stat"><div class="v" style="color:${totalMsgs>0?'var(--red)':'var(--grey)'}">${totalMsgs}</div><div class="l">Messages</div></div>
+      <div class="stat"><div class="v" style="color:#4CAF50">${(()=>{const now=new Date();return cs.reduce((t2,c2)=>t2+(c2.paiements||[]).filter(p2=>{const d=new Date(p2.date+"T12:00:00");return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();}).reduce((t3,p2)=>t3+(+p2.montant||0),0),0).toFixed(0);})()} €</div><div class="l">CA du mois</div></div>
     </div>
     ${byF.length?`<div class="tags">${byF.map(x=>`<span class="tag ${x.f==='Petit groupe'?'am':'em'}">${x.f} · ${x.n}</span>`).join("")}</div>`:""}
     ${(()=>{
@@ -680,9 +682,12 @@ function dashboard(){
       const later=rdvs.filter(x=>x.d.toDateString()!==todayStr);
       return `${auj.length?`<div class="panel" style="margin-bottom:14px;border-color:rgba(184,134,47,.5);background:linear-gradient(180deg,rgba(184,134,47,.08),transparent)">
         <div class="ph" style="color:var(--amber);font-size:14px">📅 Aujourd'hui</div>
-        ${auj.map(({c,d})=>`<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:15px">
+        ${auj.map(({c,d})=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:15px">
           <span style="color:var(--white);font-weight:700">${esc(c.nom)}</span>
-          <span style="color:var(--amber);font-weight:800;font-family:'Bebas Neue';font-size:18px;letter-spacing:.05em">${d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</span>
+          <span style="display:flex;align-items:center;gap:10px">
+            <span style="color:var(--amber);font-weight:800;font-family:'Bebas Neue';font-size:18px;letter-spacing:.05em">${d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</span>
+            <button class="link" style="font-size:15px;padding:2px" title="Envoyer un rappel" data-act="rdv-remind" data-id="${c.id}">🔔</button>
+          </span>
         </div>`).join("")}</div>`:''}
       ${later.length?`<div class="panel" style="margin-bottom:14px"><div class="ph" style="font-size:14px">Prochains RDV</div>
         ${rdvs.map(({c,d})=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line);font-size:13.5px">
@@ -719,6 +724,17 @@ function dashboard(){
     <div class="panel">
       <p class="muted" style="margin-bottom:12px">Connecté : <b>${esc(email)}</b></p>
       <div class="col">
+        ${(()=>{
+          const now=new Date(); const rows=[];
+          for(let i=5;i>=0;i--){
+            const m=new Date(now.getFullYear(),now.getMonth()-i,1);
+            const tot=S.clients.reduce((t2,c2)=>t2+(c2.paiements||[]).filter(p2=>{const d=new Date(p2.date+"T12:00:00");return d.getMonth()===m.getMonth()&&d.getFullYear()===m.getFullYear();}).reduce((t3,p2)=>t3+(+p2.montant||0),0),0);
+            rows.push({lab:m.toLocaleDateString("fr-FR",{month:"long",year:"2-digit"}),tot});
+          }
+          if(!rows.some(r2=>r2.tot>0)) return "";
+          return `<div style="margin-bottom:12px"><div class="ph" style="font-size:13px">💶 Revenus (6 derniers mois)</div>
+            ${rows.map(r2=>`<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid var(--line)"><span style="color:var(--grey);text-transform:capitalize">${r2.lab}</span><b style="color:${r2.tot>0?'#4CAF50':'var(--grey2)'}">${r2.tot.toFixed(0)} €</b></div>`).join("")}
+            <p class="muted" style="font-size:11px;margin-top:6px">Pratique pour tes déclarations URSSAF de micro-entrepreneur.</p></div>`;})()}
         <button class="btn g full" data-act="export">↓ Exporter une sauvegarde</button>
         <button class="btn g full" data-act="import-open">↑ Importer une sauvegarde</button>
         <input type="file" id="imp-file" accept=".json,application/json" style="display:none">
@@ -765,6 +781,18 @@ function detail(c){
 function infosTab(c){
   const opt=(arr,v)=>arr.map(o=>`<option ${o===v?'selected':''}>${o}</option>`).join("");
   return `
+    ${(()=>{
+      const sn=(c.seances||[]).filter(x=>x.fait).length;
+      const stk2=streakWeeks(c);
+      const anc=(()=>{ if(!c.dateDebut) return "—";
+        const d0=new Date(c.dateDebut+"T12:00:00"); if(isNaN(d0)) return "—";
+        const days=Math.max(0,Math.round((Date.now()-d0.getTime())/86400000));
+        return days<31?days+" j":Math.round(days/30.4)+" mois";})();
+      return `<div class="pstats">
+        <div class="pstat"><div class="pv">${anc}</div><div class="pl">Ancienneté</div></div>
+        <div class="pstat"><div class="pv">${sn}</div><div class="pl">Séances faites</div></div>
+        <div class="pstat"><div class="pv">${stk2>0?"🔥 "+stk2:"—"}</div><div class="pl">Sem. d'affilée</div></div>
+      </div>`;})()}`+`
     <label class="fld"><span>Nom</span><input data-bind="nom" value="${esc(c.nom)}"></label>
     <label class="fld"><span>Objectif</span><input data-bind="objectif" value="${esc(c.objectif)}" placeholder="Ex. Retrouver de l'autonomie"></label>
     <div class="r2"><label class="fld"><span>Formule</span><select data-bind="formule">${opt(FORMULES,c.formule)}</select></label>
@@ -779,6 +807,26 @@ function infosTab(c){
       const pct=c.forfaitTotal>0?Math.round(done/c.forfaitTotal*100):0;
       return `<div style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--grey)"><span>Forfait utilisé</span><span>${done}/${c.forfaitTotal} séances</span></div><div class="obj-bar"><div class="obj-fill" style="width:${Math.min(100,pct)}%"></div></div>${r<=2?`<div class="badge-warn" style="margin-top:6px">⚠ Plus que ${r} séance${r>1?'s':''} — pensez au renouvellement</div>`:''}</div>`;})()}
     <label class="fld"><span>Notes (santé, contraintes, remarques)</span><textarea data-bind="notes" rows="3">${esc(c.notes||"")}</textarea></label>
+    <div class="panel" style="margin-bottom:14px">
+      <div class="ph">💶 Paiements</div>
+      ${(()=>{
+        const ps=c.paiements||[];
+        const tot=ps.reduce((t2,p2)=>t2+(+p2.montant||0),0);
+        return `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span style="font-size:13px;color:var(--grey)">Total encaissé</span>
+          <span style="font-family:'Bebas Neue';font-size:22px;color:#4CAF50">${tot.toFixed(0)} €</span>
+        </div>
+        <div class="r2" style="align-items:flex-end">
+          <label class="fld" style="margin-bottom:0"><span>Montant (€)</span><input id="pay-montant" inputmode="decimal" placeholder="250"></label>
+          <label class="fld" style="flex:2;margin-bottom:0"><span>Note</span><input id="pay-note" placeholder="Forfait 10 séances"></label>
+        </div>
+        <button class="btn g full" style="margin-top:10px" data-act="pay-add">+ Enregistrer le paiement</button>
+        ${ps.length?[...ps].reverse().map((p2,ri)=>`<div class="mrow" style="margin-top:8px"><div style="flex:1;display:flex;justify-content:space-between;align-items:center">
+          <span class="md" style="margin-left:0">${frDate(p2.date)}${p2.note?` · ${esc(p2.note)}`:""}</span>
+          <span style="display:flex;align-items:center;gap:8px"><b style="color:#4CAF50">${(+p2.montant||0).toFixed(0)} €</b><button class="x" data-act="pay-del" data-idx="${ps.length-1-ri}">×</button></span>
+        </div></div>`).join(""):""}`;})()}
+    </div>
     <div class="panel" style="margin-bottom:14px">
       <div class="ph">Accès client</div>
       <label class="fld"><span>E-mail du client</span><input data-bind="clientEmail" type="email" value="${esc(c.clientEmail||"")}" placeholder="client@exemple.fr" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
@@ -856,7 +904,7 @@ function programme(c,editable){
   }
   const form=editable?`
     <div class="panel"><div class="ph">Nouvel exercice</div>
-      <label class="fld"><span>Exercice</span><input id="ex-nom" placeholder="Ex. Presse à cuisses"></label>
+      <label class="fld"><span>Exercice</span><input id="ex-nom" list="exos-fr" placeholder="Ex. Presse à cuisses"></label>
       <div class="r2"><label class="fld"><span>Séries</span><input id="ex-series" type="number" min="1" value="3"></label>
       <label class="fld"><span>Reps</span><input id="ex-reps" value="12"></label></div>
       <div class="r2"><label class="fld"><span>Charge</span><input id="ex-charge" placeholder="40 kg"></label>
@@ -1570,7 +1618,7 @@ function tplEditor(){
     <label class="fld"><span>Nom du programme</span><input id="tpl-nom" placeholder="Ex. Full body débutant — 3 séances" value="${esc(t.nom||"")}"></label>
     ${sorted.length?sorted.map(({e,i})=>tplExoCard(e,i,true)).join(""):`<p class="muted" style="margin-bottom:12px">Aucun exercice — ajoutez-en ci-dessous.</p>`}
     <div class="panel" style="margin-bottom:14px"><div class="ph">Ajouter un exercice</div>
-      <label class="fld"><span>Nom</span><input id="tex-nom" placeholder="Squat gobelet"></label>
+      <label class="fld"><span>Nom</span><input id="tex-nom" list="exos-fr" placeholder="Squat gobelet"></label>
       <div class="r2">
         <label class="fld"><span>Séries</span><input id="tex-series" inputmode="numeric" placeholder="3"></label>
         <label class="fld"><span>Répétitions</span><input id="tex-reps" placeholder="8-10"></label>
@@ -2118,6 +2166,25 @@ document.addEventListener("click",e=>{
       patchField(c,"bilans"); render(); break; }
     case "del-bilan": if(c){ c.bilans=(c.bilans||[]).filter((_,i)=>i!==+t.dataset.idx); patchField(c,"bilans"); render(); } break;
     case "del-photo": if(c){ c.photos=(c.photos||[]).filter((_,i)=>i!==+t.dataset.idx); patchField(c,"photos"); render(); } break;
+    case "pay-add":{ if(!c) return;
+      const m=parseFloat((val("pay-montant")||"").replace(",","."));
+      if(!m||m<=0){ alert("Indique un montant valide."); return; }
+      c.paiements=c.paiements||[];
+      c.paiements.push({date:today(),montant:m,note:(val("pay-note")||"").trim()});
+      patchField(c,"paiements",err=>toast(err?"Erreur":"Paiement enregistré"));
+      render(); break; }
+    case "pay-del":{ if(!c) return;
+      if(!confirm("Supprimer ce paiement ?")) break;
+      c.paiements.splice(+t.dataset.idx,1);
+      patchField(c,"paiements",()=>{});
+      render(); break; }
+    case "rdv-remind":{ const c2=S.clients.find(x=>x.id===t.dataset.id); if(!c2||!c2.prochainRdv) break;
+      const d=new Date(c2.prochainRdv);
+      const quand=d.toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"})+" à "+d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
+      c2.messages=c2.messages||[];
+      c2.messages.push({from:"coach",text:`🔔 Rappel : notre séance est prévue ${quand}. À très vite ! 💪`,date:new Date().toISOString(),lu:true});
+      patchField(c2,"messages",err=>toast(err?"Erreur":"Rappel envoyé à "+c2.nom));
+      break; }
     case "import-open":{ const f=document.getElementById("imp-file"); if(f){ f.value=""; f.click(); } break; }
     case "export":{
       const payload={app:"Alex Coaching",version:1,exportedAt:new Date().toISOString(),clients:S.clients};
