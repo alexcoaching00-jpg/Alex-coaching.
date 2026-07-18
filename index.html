@@ -55,7 +55,9 @@
   .sub{color:var(--grey2);font-size:13px;margin-top:8px}
   .pick label{color:var(--grey2);font-size:12px}
   .pick select{display:block;margin-top:4px;background:var(--ink2);color:var(--white);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:15px;font-family:'Inter';font-weight:600;width:100%}
-  .row-stats{display:flex;gap:12px;margin-bottom:16px}
+  .row-stats{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+  .row-stats .stat{min-width:calc(50% - 5px)}
+  @media(min-width:420px){.row-stats .stat{min-width:0}}
   .stat{flex:1;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px 16px;box-shadow:0 4px 14px rgba(0,0,0,.35)}
   .stat .v{font-family:'Bebas Neue';font-size:36px;color:var(--red);line-height:1;letter-spacing:.04em}
   .stat .l{font-size:11px;color:var(--grey);margin-top:4px;font-weight:600;text-transform:uppercase;letter-spacing:.06em}
@@ -386,7 +388,7 @@ window.supabase={
 </script>
 <script>
 "use strict";
-const APP_VERSION="v3.9 — 18/07/2026";
+const APP_VERSION="v4.0 — 18/07/2026";
 const SUPA_URL="https://xjmelkqtropownhfmuuh.supabase.co";
 const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqbWVsa3F0cm9wb3duaGZtdXVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3MDI3MTYsImV4cCI6MjA5OTI3ODcxNn0.mYoJx96xZ9SBaGky9EN8_MoTuSy7BY5D_aGB7JIFQyg";
 
@@ -444,7 +446,7 @@ let toastT=null;
 function toast(msg){const t=document.getElementById("toast");if(!t)return;t.textContent=msg;t.style.display="block";clearTimeout(toastT);toastT=setTimeout(()=>t.style.display="none",1200);}
 
 const timers={};
-function lightRow(c){const r=clientToRow(c);delete r.messages;delete r.photos;delete r.bilans;return r;}
+function lightRow(c){const r=clientToRow(c);delete r.messages;delete r.photos;delete r.bilans;delete r.checkins;delete r.paiements;return r;}
 let SCHEMA_WARNED=false;
 function schemaHint(error){
   if(SCHEMA_WARNED||!error||!error.message) return;
@@ -475,6 +477,17 @@ function isTypingOrRecording(){
   if(ta && (document.activeElement===ta || ta.value.trim())) return true;
   if(typeof REC!=="undefined" && REC.rec && REC.rec.state==="recording") return true;
   if(typeof WK!=="undefined" && WK.on) return true;
+  // Éditeur de programme ouvert : saisie longue, jamais de reload
+  if(S.tplEdit) return true;
+  // Un champ quelconque a le focus (clavier ouvert) : ne pas re-rendre
+  const ae=document.activeElement;
+  if(ae&&(ae.tagName==="INPUT"||ae.tagName==="TEXTAREA"||ae.tagName==="SELECT")) return true;
+  // Un formulaire libre (exercice, paiement, check-in…) contient du texte pas encore validé
+  try{
+    const pending=[...document.querySelectorAll("input:not([data-bind]):not([type=file]):not([type=range]),textarea:not([data-bind])")]
+      .some(el=>!el.closest(".authcard")&&el.id!=="cl-search"&&el.value&&el.value.trim());
+    if(pending) return true;
+  }catch(e){}
   return false;
 }
 async function reloadKeepingView(){
