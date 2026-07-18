@@ -187,6 +187,7 @@
   .cft{position:fixed;top:-14px;width:9px;height:14px;z-index:260;border-radius:2px;pointer-events:none;animation:cfall linear forwards}
   @keyframes cfall{to{transform:translateY(110vh) rotate(720deg);opacity:.9}}
 
+  .offline-bar{position:fixed;top:0;left:0;right:0;z-index:300;background:var(--red);color:#fff;font-size:12.5px;font-weight:700;text-align:center;padding:calc(6px + env(safe-area-inset-top)) 10px 6px}
   /* splash */
   #splash{position:fixed;inset:0;background:#0D0B0A;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;transition:opacity .5s ease}
   #splash.out{opacity:0;pointer-events:none}
@@ -246,7 +247,20 @@ window.supabase={
     });
     const base=url;
     // Auth
+    async function refreshSession(){
+      try{
+        if(!_session||!_session.refresh_token) return false;
+        const r=await fetch(`${base}/auth/v1/token?grant_type=refresh_token`,{method:'POST',headers:{'Content-Type':'application/json','apikey':key},body:JSON.stringify({refresh_token:_session.refresh_token})});
+        const d=await r.json();
+        if(!r.ok||!d.access_token) return false;
+        _session=d; localStorage.setItem('sb_session',JSON.stringify(d));
+        return true;
+      }catch(e){ return false; }
+    }
+    // Renouvellement préventif toutes les 45 min (le jeton expire au bout d'1 h)
+    setInterval(()=>{ if(_session&&_session.refresh_token) refreshSession(); },45*60*1000);
     const auth={
+      _refresh:refreshSession,
       _listeners:[],
       _notify(evt,sess){this._listeners.forEach(fn=>fn(evt,sess));},
       async signInWithPassword({email,password}){
@@ -292,7 +306,14 @@ window.supabase={
             const exp=sess.expires_at||sess.expires_in;
             const expired=exp&&(typeof exp==='number'&&exp<1e10?Date.now()/1000>exp:Date.now()/1000>new Date(exp).getTime()/1000);
             if(!expired){_session=sess;setTimeout(()=>fn('SIGNED_IN',sess),0);}
-            else{localStorage.removeItem('sb_session');setTimeout(()=>fn('SIGNED_OUT',null),0);}
+            else{
+              _session=sess; // garder le refresh_token pour tenter le renouvellement
+              setTimeout(async()=>{
+                const ok2=await refreshSession();
+                if(ok2){ fn('SIGNED_IN',_session); }
+                else{ _session=null; localStorage.removeItem('sb_session'); fn('SIGNED_OUT',null); }
+              },0);
+            }
           } else {setTimeout(()=>fn('SIGNED_OUT',null),0);}
         }catch(e){setTimeout(()=>fn('SIGNED_OUT',null),0);}
         return {data:{subscription:{unsubscribe:()=>{}}}};
@@ -315,11 +336,18 @@ window.supabase={
         } else {
           h['Prefer']='return=representation';
         }
-        const opts={method:_method,headers:h};
-        if(_body!=null) opts.body=JSON.stringify(_body);
         let r;
-        try{ r=await fetch(path,opts); }
-        catch(e){ return {data:null,error:{message:'Réseau: '+e.message}}; }
+        for(let attempt=0;attempt<2;attempt++){
+          const h2={...headers()};
+          if(_method==='GET'){ if(_single) h2['Accept']='application/vnd.pgrst.object+json'; }
+          else { h2['Prefer']='return=representation'; }
+          const opts={method:_method,headers:h2};
+          if(_body!=null) opts.body=JSON.stringify(_body);
+          try{ r=await fetch(path,opts); }
+          catch(e){ return {data:null,error:{message:'Réseau: '+e.message}}; }
+          if(r.status===401&&attempt===0){ const ok2=await auth._refresh(); if(ok2) continue; }
+          break;
+        }
         if(_method==='DELETE'){
           if(!r.ok){ const d=await r.json().catch(()=>({})); return {data:null,error:{message:d.message||'Erreur'}}; }
           return {data:null,error:null};
@@ -356,7 +384,7 @@ window.supabase={
 </script>
 <script>
 "use strict";
-const APP_VERSION="v3.5 — 16/07/2026";
+const APP_VERSION="v3.6 — 18/07/2026";
 const SUPA_URL="https://xjmelkqtropownhfmuuh.supabase.co";
 const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqbWVsa3F0cm9wb3duaGZtdXVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3MDI3MTYsImV4cCI6MjA5OTI3ODcxNn0.mYoJx96xZ9SBaGky9EN8_MoTuSy7BY5D_aGB7JIFQyg";
 
@@ -423,8 +451,9 @@ function schemaHint(error){
     alert("Ta base Supabase n'est pas à jour : il manque une colonne.\n\n("+error.message+")\n\nExécute le script SQL de mise à jour complet dans Supabase → SQL Editor, puis recharge l'appli.");
   }
 }
-function save(){const c=sel();if(!c||!sb)return;clearTimeout(timers[c.id]);timers[c.id]=setTimeout(()=>{
-  sb.from("clients").update(lightRow(c)).eq("id",c.id).then(({error})=>{ if(error) schemaHint(error); toast(error?"Erreur de sync":"Synchronisé"); });
+let DIRTY=false;
+function save(){const c=sel();if(!c||!sb)return;DIRTY=true;clearTimeout(timers[c.id]);timers[c.id]=setTimeout(()=>{
+  sb.from("clients").update(lightRow(c)).eq("id",c.id).then(({error})=>{ DIRTY=false; if(error) schemaHint(error); toast(error?"Erreur de sync":"Synchronisé"); });
 },350);}
 /* patch ciblé d'un seul champ (messages, photos, bilans) : léger et fiable */
 function patchField(c,field,cb){
@@ -691,6 +720,8 @@ function dashboard(){
       <p class="muted" style="margin-bottom:12px">Connecté : <b>${esc(email)}</b></p>
       <div class="col">
         <button class="btn g full" data-act="export">↓ Exporter une sauvegarde</button>
+        <button class="btn g full" data-act="import-open">↑ Importer une sauvegarde</button>
+        <input type="file" id="imp-file" accept=".json,application/json" style="display:none">
         <button class="btn g full" data-act="install-help">📲 Installer comme application</button>
         <button class="btn g full" data-act="logout">Se déconnecter</button>
       </div>
@@ -899,7 +930,7 @@ function confetti(){
     for(let i=0;i<40;i++){
       const el=document.createElement("div");
       el.className="cft";
-      el.style.left=(Math.random()*100)+"vw";
+      el.style.left=(Math.random()*95)+"vw";
       el.style.background=colors[i%colors.length];
       el.style.animationDuration=(1.6+Math.random()*1.4)+"s";
       el.style.animationDelay=(Math.random()*0.4)+"s";
@@ -1816,6 +1847,27 @@ async function inviteClient(){
   alert(msg);
 }
 
+
+/* Import de sauvegarde : recrée les clients absents (par nom), sans écraser l'existant */
+async function importBackupData(arr){
+  if(!Array.isArray(arr)) return {added:0,skipped:0,failed:0,bad:true};
+  const existing=new Set(S.clients.map(c=>(c.nom||"").trim().toLowerCase()));
+  let added=0,skipped=0,failed=0;
+  for(const raw of arr){
+    const nom=(raw.nom||"").trim();
+    if(!nom){ failed++; continue; }
+    if(existing.has(nom.toLowerCase())){ skipped++; continue; }
+    const {data,error}=await sb.from("clients").insert(baseRow(raw)).select().single();
+    if(error||!data){ failed++; continue; }
+    const full={...raw,id:data.id};
+    await sb.from("clients").update(lightRow(full)).eq("id",data.id).then(({error:e2})=>{ if(e2) schemaHint(e2); });
+    S.clients.push(full);
+    existing.add(nom.toLowerCase());
+    added++;
+  }
+  return {added,skipped,failed};
+}
+
 function baseRow(c){
   // Colonnes présentes depuis l'origine — insertion toujours acceptée
   return {nom:c.nom,objectif:c.objectif||null,formule:c.formule||null,niveau:c.niveau||null,notes:c.notes||null,date_debut:c.dateDebut||null,program:c.program||[],mesures:c.mesures||[],seances:c.seances||[]};
@@ -2066,6 +2118,7 @@ document.addEventListener("click",e=>{
       patchField(c,"bilans"); render(); break; }
     case "del-bilan": if(c){ c.bilans=(c.bilans||[]).filter((_,i)=>i!==+t.dataset.idx); patchField(c,"bilans"); render(); } break;
     case "del-photo": if(c){ c.photos=(c.photos||[]).filter((_,i)=>i!==+t.dataset.idx); patchField(c,"photos"); render(); } break;
+    case "import-open":{ const f=document.getElementById("imp-file"); if(f){ f.value=""; f.click(); } break; }
     case "export":{
       const payload={app:"Alex Coaching",version:1,exportedAt:new Date().toISOString(),clients:S.clients};
       const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
@@ -2090,6 +2143,22 @@ document.addEventListener("input",e=>{
   const c=sel(); if(!c) return; c[el.dataset.bind]=el.value; save();
 });
 document.addEventListener("change",e=>{
+  if(e.target.id==="imp-file"){
+    const f=e.target.files&&e.target.files[0]; if(!f) return;
+    const rd=new FileReader();
+    rd.onload=async()=>{
+      let payload=null;
+      try{ payload=JSON.parse(rd.result); }catch(_){ alert("Fichier illisible — choisis une sauvegarde Alex Coaching (.json)."); return; }
+      const arr=Array.isArray(payload)?payload:(payload&&payload.clients);
+      toast("Import en cours…");
+      const res=await importBackupData(arr);
+      if(res.bad){ alert("Ce fichier n'est pas une sauvegarde Alex Coaching valide."); return; }
+      render();
+      alert(`Import terminé :\n• ${res.added} client(s) restauré(s)\n• ${res.skipped} déjà présent(s) (ignorés)${res.failed?`\n• ${res.failed} en échec`:""}`);
+    };
+    rd.readAsText(f);
+    return;
+  }
   const nut=e.target.closest("[data-nut]");
   if(nut){ const c=sel(); if(!c) return;
     c.nutrition=c.nutrition||{};
@@ -2139,8 +2208,20 @@ function setupPWA(){
     document.head.appendChild(lk);
   }catch(e){}
 }
+function updateOnlineBar(){
+  const b=document.getElementById("offbar");
+  if(!navigator.onLine){
+    if(!b){ const d=document.createElement("div"); d.id="offbar"; d.className="offline-bar"; d.textContent="⚠ Hors ligne — vos modifications ne seront pas enregistrées"; document.body.appendChild(d); }
+  } else if(b){ b.remove(); }
+}
+window.addEventListener("offline",updateOnlineBar);
+window.addEventListener("online",()=>{ updateOnlineBar(); toast("Connexion rétablie — synchronisation…"); try{ if(!isTypingOrRecording()) reloadKeepingView(); }catch(e){} });
+window.addEventListener("beforeunload",e=>{
+  if((typeof PENDING!=="undefined"&&PENDING>0)||(typeof DIRTY!=="undefined"&&DIRTY)){ e.preventDefault(); e.returnValue=""; }
+});
 function bootApp(){
   setupPWA();
+  updateOnlineBar();
   const spImg=document.getElementById('splash-img'); if(spImg) spImg.src=LOGO;
   sb = window.supabase.createClient(SUPA_URL, SUPA_KEY);
   render();
