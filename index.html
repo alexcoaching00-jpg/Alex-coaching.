@@ -388,7 +388,7 @@ window.supabase={
 </script>
 <script>
 "use strict";
-const APP_VERSION="v4.0 — 18/07/2026";
+const APP_VERSION="v4.1 — 18/07/2026";
 const SUPA_URL="https://xjmelkqtropownhfmuuh.supabase.co";
 const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqbWVsa3F0cm9wb3duaGZtdXVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3MDI3MTYsImV4cCI6MjA5OTI3ODcxNn0.mYoJx96xZ9SBaGky9EN8_MoTuSy7BY5D_aGB7JIFQyg";
 
@@ -900,6 +900,7 @@ function programme(c,editable){
       ${e.alt?`<div class="exd" style="color:var(--amber);font-size:12.5px">↔ Trop difficile ? ${esc(e.alt)}</div>`:""}
       ${last3.length?`<div class="exd" style="color:#4CAF50;font-size:12px">Charges : ${last3.map(h=>`${esc(h.charge)} <span style="color:var(--grey2)">(${frDate(h.date)})</span>`).join(" → ")}</div>`:""}
       <div style="display:flex;gap:14px;align-items:center;margin-top:5px;flex-wrap:wrap">
+        <a class="link" style="font-size:12px;padding:0;text-decoration:none" href="${esc(exoVideoUrl(e))}" target="_blank" rel="noopener">▶️ Vidéo</a>
         <button class="link" style="font-size:12px;padding:0" data-act="log-charge" data-id="${e.id}">+ Noter la charge</button>
         ${parseRepos(e.repos)?`<button class="tmr" id="tmr-${e.id}" data-act="timer" data-id="${e.id}" data-secs="${parseRepos(e.repos)}" data-label="⏱ Repos ${esc(e.repos)}">⏱ Repos ${esc(e.repos)}</button>`:""}
       </div></div>
@@ -929,10 +930,11 @@ function programme(c,editable){
       <label class="fld"><span>Reps</span><input id="ex-reps" value="12"></label></div>
       <div class="r2"><label class="fld"><span>Charge</span><input id="ex-charge" placeholder="40 kg"></label>
       <label class="fld"><span>Repos</span><input id="ex-repos" placeholder="60 s"></label></div>
-      <div class="r2"><label class="fld"><span>Jour</span><select id="ex-bloc"><option value="">—</option><option>Lundi</option><option>Mardi</option><option>Mercredi</option><option>Jeudi</option><option>Vendredi</option><option>Samedi</option><option>Dimanche</option><option value="A">Séance A</option><option value="B">Séance B</option><option value="C">Séance C</option></select></label>
+      <div class="r2"><label class="fld"><span>Jour</span><select id="ex-bloc"><option value="">—</option>${["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche","A","B","C"].map(j=>`<option value="${j}" ${S.lastBloc===j?"selected":""}>${j.length<=2?"Séance "+j:j}</option>`).join("")}</select></label>
       <label class="fld"><span>RIR cible</span><select id="ex-rir"><option value="">—</option><option>0-1</option><option>1-2</option><option>2-3</option><option>3-4</option></select></label></div>
       <label class="fld"><span>Consigne (optionnel)</span><input id="ex-note" placeholder="Amplitude contrôlée…"></label>
       <label class="fld"><span>Équivalence si trop difficile (optionnel)</span><input id="ex-alt" placeholder="Ex. Squat gobelet → Presse à cuisses"></label>
+      <label class="fld"><span>Lien vidéo (optionnel — sinon recherche YouTube auto)</span><input id="ex-video" type="url" autocapitalize="off" placeholder="https://youtube.com/…"></label>
       <button class="btn p full" data-act="add-ex">Ajouter l'exercice</button></div>
     <div class="panel" style="margin-top:12px">
       <div class="ph" style="font-size:14px">Mes modèles de programmes</div>
@@ -1215,7 +1217,10 @@ function wkRender(){
       ${hist?`<p style="color:#4CAF50;font-size:13px">Dernière fois : ${esc(hist.charge)} (${frDate(hist.date)})</p>`:""}
       ${ex.note?`<p style="color:var(--grey);font-size:13.5px;margin-top:10px;font-style:italic">${esc(ex.note)}</p>`:""}
       ${ex.alt?`<p style="color:var(--amber);font-size:13px;margin-top:8px">↔ Trop difficile ? ${esc(ex.alt)}</p>`:""}
-      <button class="link" data-act="wk-charge" style="margin-top:14px;font-size:13px">+ Noter la charge du jour</button>
+      <div style="display:flex;justify-content:center;gap:18px;margin-top:14px">
+        <a class="link" style="font-size:13px;text-decoration:none" href="${esc(exoVideoUrl(ex))}" target="_blank" rel="noopener">▶️ Voir la technique</a>
+        <button class="link" data-act="wk-charge" style="font-size:13px">+ Noter la charge</button>
+      </div>
     </div>
     <button class="btn p full" data-act="wk-done" style="padding:16px;font-size:17px">✓ Série faite${parseRepos(ex.repos)?` — repos ${esc(ex.repos)}`:""}</button>
     <div style="display:flex;justify-content:space-between;width:100%;margin-top:10px">
@@ -1617,6 +1622,14 @@ function nutritionTab(c,editable){
 
 
 
+
+/* Lien vidéo d'un exercice : lien du coach, sinon recherche YouTube de la technique */
+function exoVideoUrl(e){
+  const v=(e&&e.video||"").trim();
+  if(/^https?:\/\//i.test(v)) return v;
+  return "https://www.youtube.com/results?search_query="+encodeURIComponent((e&&e.nom||"exercice musculation")+" technique exécution");
+}
+
 /* ===== BASE D'EXERCICES (par groupe musculaire) ===== */
 const EXOS_GROUPES=[
 ["Jambes — Quadriceps",["Squat barre","Squat gobelet","Front squat","Squat sumo","Squat bulgare","Box squat","Presse à cuisses","Hack squat machine","Leg extension","Fentes marchées","Fentes arrières","Fentes latérales","Step-ups sur banc","Sissy squat","Squat pistol assisté","Jump squat"]],
@@ -1650,6 +1663,7 @@ function tplExoCard(e,i,editing){
       <div class="exd">${e.series} × ${esc(e.reps||"—")}${e.charge?` · ${esc(e.charge)}`:""}${e.repos?` · repos ${esc(e.repos)}`:""}</div>
       ${e.note?`<div class="exnote">${esc(e.note)}</div>`:""}
       ${e.alt?`<div class="exd" style="color:var(--amber);font-size:12.5px">↔ ${esc(e.alt)}</div>`:""}
+      <a class="link" style="font-size:12px;padding:0;text-decoration:none" href="${esc(exoVideoUrl(e))}" target="_blank" rel="noopener">▶️ Vidéo</a>
     </div>
     ${editing?`<span style="display:flex;gap:4px"><button class="x" style="font-size:14px" data-act="tpl-edit-ex" data-idx="${i}" title="Modifier">✏️</button><button class="x" data-act="tpl-del-ex" data-idx="${i}">×</button></span>`:""}
   </div></div>`;
@@ -1673,6 +1687,7 @@ function tplEditor(){
       ${b2?`<span style="display:flex;align-items:center;gap:6px">
         <select id="dl-${safe}" style="font-size:12px;padding:5px 26px 5px 8px;border-radius:8px;background:var(--ink2);color:var(--white);border:1px solid var(--line)">${others.map(j=>`<option value="${j}">${j.length<=2?"Séance "+j:j}</option>`).join("")}</select>
         <button class="link" style="font-size:12px" data-act="tpl-dup-day" data-from="${esc(b2)}">⧉ Copier vers</button>
+        <button class="link" style="font-size:12px" data-act="tpl-add-here" data-bloc="${esc(b2)}">+ Exo ici</button>
       </span>`:""}
     </div>
     ${groups[b2].map(({e,i})=>tplExoCard(e,i,true)).join("")}`;
@@ -1693,11 +1708,12 @@ function tplEditor(){
         <label class="fld"><span>Repos</span><input id="tex-repos" placeholder="90 s" value="${esc(d.repos||"")}"></label>
       </div>
       <div class="r2">
-        <label class="fld"><span>Jour / séance</span><select id="tex-bloc"><option value="">—</option>${JOURS2.map(j=>`<option value="${j}" ${d.bloc===j?"selected":""}>${j.length<=2?"Séance "+j:j}</option>`).join("")}</select></label>
+        <label class="fld"><span>Jour / séance</span><select id="tex-bloc"><option value="">—</option>${JOURS2.map(j=>`<option value="${j}" ${(d.bloc||t.lastBloc)===j?"selected":""}>${j.length<=2?"Séance "+j:j}</option>`).join("")}</select></label>
         <label class="fld"><span>RIR cible</span><select id="tex-rir"><option value="">—</option>${["0-1","1-2","2-3","3-4"].map(r2=>`<option ${d.rir===r2?"selected":""}>${r2}</option>`).join("")}</select></label>
       </div>
       <label class="fld"><span>Consigne (optionnel)</span><input id="tex-note" placeholder="Amplitude contrôlée…" value="${esc(d.note||"")}"></label>
       <label class="fld"><span>Équivalence si trop difficile (optionnel)</span><input id="tex-alt" placeholder="Presse à cuisses" value="${esc(d.alt||"")}"></label>
+      <label class="fld"><span>Lien vidéo (optionnel — sinon recherche YouTube auto)</span><input id="tex-video" type="url" autocapitalize="off" placeholder="https://youtube.com/…" value="${esc(d.video||"")}"></label>
       <button class="btn g full" data-act="tpl-add-ex">${d.nom?"✔ Valider la modification":"+ Ajouter l'exercice"}</button>
     </div>
     <button class="btn p full" data-act="tpl-editor-save">💾 Enregistrer le programme</button>`;
@@ -2077,7 +2093,9 @@ document.addEventListener("click",e=>{
     case "del-cancel": S.confirmDel=false; render(); break;
     case "del-confirm": deleteSelected(); break;
     case "add-ex":{ if(!c) return; const nom=val("ex-nom").trim(); if(!nom) return;
-      c.program=c.program||[]; c.program.push({id:uid(),nom,series:+val("ex-series")||3,reps:val("ex-reps"),charge:val("ex-charge"),repos:val("ex-repos"),note:val("ex-note"),alt:val("ex-alt")||"",bloc:val("ex-bloc")||"",rir:val("ex-rir")||"",historique:[]});
+      const bloc=val("ex-bloc")||"";
+      S.lastBloc=bloc;
+      c.program=c.program||[]; c.program.push({id:uid(),nom,series:+val("ex-series")||3,reps:val("ex-reps"),charge:val("ex-charge"),repos:val("ex-repos"),note:val("ex-note"),alt:val("ex-alt")||"",bloc,rir:val("ex-rir")||"",video:(val("ex-video")||"").trim(),historique:[]});
       save(); render(); break; }
     case "del-ex": if(c){ c.program=(c.program||[]).filter(x=>x.id!==t.dataset.id); save(); render(); } break;
     case "tpl-new": S.tplEdit={id:null,nom:"",program:[]}; render(); break;
@@ -2087,7 +2105,9 @@ document.addEventListener("click",e=>{
     case "tpl-add-ex":{ if(!S.tplEdit) break;
       const nom=val("tex-nom").trim(); if(!nom) break;
       const keepId=(S.tplEdit.draft&&S.tplEdit.draft.id)||uid();
-      S.tplEdit.program.push({id:keepId,nom,series:+val("tex-series")||3,reps:val("tex-reps"),charge:val("tex-charge"),repos:val("tex-repos"),note:val("tex-note"),alt:val("tex-alt")||"",bloc:val("tex-bloc")||"",rir:val("tex-rir")||"",historique:[]});
+      const tbloc=val("tex-bloc")||"";
+      S.tplEdit.lastBloc=tbloc;
+      S.tplEdit.program.push({id:keepId,nom,series:+val("tex-series")||3,reps:val("tex-reps"),charge:val("tex-charge"),repos:val("tex-repos"),note:val("tex-note"),alt:val("tex-alt")||"",bloc:tbloc,rir:val("tex-rir")||"",video:(val("tex-video")||"").trim(),historique:[]});
       S.tplEdit.draft=null;
       const keepNom=val("tpl-nom"); S.tplEdit.nom=keepNom;
       render(); break; }
@@ -2100,6 +2120,12 @@ document.addEventListener("click",e=>{
       if(ex2) S.tplEdit.draft={...ex2};
       render();
       const f2=document.getElementById("tex-nom"); if(f2) f2.scrollIntoView({behavior:"smooth",block:"center"});
+      break; }
+    case "tpl-add-here":{ if(!S.tplEdit) break;
+      S.tplEdit.nom=val("tpl-nom");
+      S.tplEdit.draft={bloc:t.dataset.bloc};
+      render();
+      const f3=document.getElementById("tex-nom"); if(f3){ f3.scrollIntoView({behavior:"smooth",block:"center"}); f3.focus(); }
       break; }
     case "tpl-dup-day":{ if(!S.tplEdit) break;
       S.tplEdit.nom=val("tpl-nom");
