@@ -356,7 +356,7 @@ window.supabase={
 </script>
 <script>
 "use strict";
-const APP_VERSION="v3.4 — 16/07/2026";
+const APP_VERSION="v3.5 — 16/07/2026";
 const SUPA_URL="https://xjmelkqtropownhfmuuh.supabase.co";
 const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqbWVsa3F0cm9wb3duaGZtdXVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3MDI3MTYsImV4cCI6MjA5OTI3ODcxNn0.mYoJx96xZ9SBaGky9EN8_MoTuSy7BY5D_aGB7JIFQyg";
 
@@ -415,8 +415,16 @@ function toast(msg){const t=document.getElementById("toast");if(!t)return;t.text
 
 const timers={};
 function lightRow(c){const r=clientToRow(c);delete r.messages;delete r.photos;delete r.bilans;return r;}
+let SCHEMA_WARNED=false;
+function schemaHint(error){
+  if(SCHEMA_WARNED||!error||!error.message) return;
+  if(/column|schema cache/i.test(error.message)){
+    SCHEMA_WARNED=true;
+    alert("Ta base Supabase n'est pas à jour : il manque une colonne.\n\n("+error.message+")\n\nExécute le script SQL de mise à jour complet dans Supabase → SQL Editor, puis recharge l'appli.");
+  }
+}
 function save(){const c=sel();if(!c||!sb)return;clearTimeout(timers[c.id]);timers[c.id]=setTimeout(()=>{
-  sb.from("clients").update(lightRow(c)).eq("id",c.id).then(({error})=>toast(error?"Erreur de sync":"Synchronisé"));
+  sb.from("clients").update(lightRow(c)).eq("id",c.id).then(({error})=>{ if(error) schemaHint(error); toast(error?"Erreur de sync":"Synchronisé"); });
 },350);}
 /* patch ciblé d'un seul champ (messages, photos, bilans) : léger et fiable */
 function patchField(c,field,cb){
@@ -424,7 +432,7 @@ function patchField(c,field,cb){
   sb.from("clients").update({[field]:c[field]||[],updated_at:new Date().toISOString()}).eq("id",c.id)
     .then(({error})=>{
       PENDING=Math.max(0,PENDING-1);
-      if(error){ alert("Envoi impossible : "+(error.message||"erreur réseau")+"\nRéessayez."); }
+      if(error){ schemaHint(error); alert("Envoi impossible : "+(error.message||"erreur réseau")+"\nRéessayez."); }
       if(cb)cb(error); else if(!error) toast("Synchronisé");
     });
 }
@@ -590,10 +598,10 @@ function render(){
   else{headSub=`<div class="pick"><label>Vous êtes</label><select data-act="pick-client">${S.clients.map(cl=>`<option value="${cl.id}" ${cl.id===S.selectedId?'selected':''}>${esc(cl.nom)}</option>`).join("")}</select></div>`;}
   head=`<header class="hd"><div class="hd-top"><div class="logo"><img class="mark-img" src="${LOGO}" alt=""><span class="wm">Alex Coaching</span></div><div class="toggle">${roleBtns}</div></div>${headSub}</header>`;
 
-  body=S.role==="coach"?(S.view==="dashboard"?dashboard():S.view==="clients"?clientList():detail(c)):clientSpace(c);
+  body=S.role==="coach"?(S.view==="programmes"?programmesView():S.view==="dashboard"?dashboard():S.view==="clients"?clientList():detail(c)):clientSpace(c);
 
   if(S.role==="coach"){
-    nav=[["dashboard","Accueil","◆"],["clients","Clients","☰"]].map(([k,l,i])=>`<button data-act="nav" data-view="${k}" class="${(S.view===k||(k==='clients'&&S.view==='detail'))?'on':''}"><span class="ic">${i}</span>${l}</button>`).join("");
+    nav=[["dashboard","Accueil","◆"],["clients","Clients","☰"],["programmes","Programmes","▤"]].map(([k,l,i])=>`<button data-act="nav" data-view="${k}" class="${(S.view===k||(k==='clients'&&S.view==='detail'))?'on':(k==='programmes'&&S.view==='programmes')?'on':''}"><span class="ic">${i}</span>${l}</button>`).join("");
   }else{
     nav=[["programme","Programme","▤"],["progres","Progrès","◔"],["seances","Séances","✓"],["messages","Msg","✉"],["bilan","Bilan","◫"],["nutrition","Nutri","🍎"]].map(([k,l,i])=>`<button data-act="nav-client" data-ctab="${k}" class="${S.clientTab===k?'on':''}"><span class="ic">${i}</span>${l}</button>`).join("");
   }
@@ -1504,6 +1512,124 @@ function nutritionTab(c,editable){
   return form+kcalCard+`<div class="sec-head"><h2 style="font-size:16px;color:var(--red)">Journée type — ${plan.cible} kcal</h2></div>`+menuSel+repasHtml+totalLine+swaps+reperes;
 }
 
+
+/* ===== BIBLIOTHÈQUE DE PROGRAMMES ===== */
+function tplExoCard(e,i,editing){
+  return `<div class="card"><div style="display:flex;align-items:flex-start;justify-content:space-between">
+    <div style="flex:1">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span class="exi">${String(i+1).padStart(2,"0")}</span><span class="exn">${esc(e.nom)}</span>
+        ${e.bloc?`<span class="tag am" style="font-size:10px">${esc(e.bloc)}</span>`:""}
+        ${e.rir?`<span class="tag ink" style="font-size:10px">RIR ${esc(e.rir)}</span>`:""}
+      </div>
+      <div class="exd">${e.series} × ${esc(e.reps||"—")}${e.charge?` · ${esc(e.charge)}`:""}${e.repos?` · repos ${esc(e.repos)}`:""}</div>
+      ${e.note?`<div class="exnote">${esc(e.note)}</div>`:""}
+      ${e.alt?`<div class="exd" style="color:var(--amber);font-size:12.5px">↔ ${esc(e.alt)}</div>`:""}
+    </div>
+    ${editing?`<button class="x" data-act="tpl-del-ex" data-idx="${i}">×</button>`:""}
+  </div></div>`;
+}
+function tplEditor(){
+  const t=S.tplEdit;
+  const JOURS2=["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"];
+  const rank=b=>{if(!b)return 100;const j=JOURS2.indexOf(b);return j>=0?j:50;};
+  const sorted=[...t.program].map((e,i)=>({e,i})).sort((a,b2)=>rank(a.e.bloc)-rank(b2.e.bloc));
+  return `
+    <div class="sec-head"><h2>${t.id?"Modifier le programme":"Nouveau programme"}</h2><button class="link" data-act="tpl-editor-cancel">Annuler</button></div>
+    <label class="fld"><span>Nom du programme</span><input id="tpl-nom" placeholder="Ex. Full body débutant — 3 séances" value="${esc(t.nom||"")}"></label>
+    ${sorted.length?sorted.map(({e,i})=>tplExoCard(e,i,true)).join(""):`<p class="muted" style="margin-bottom:12px">Aucun exercice — ajoutez-en ci-dessous.</p>`}
+    <div class="panel" style="margin-bottom:14px"><div class="ph">Ajouter un exercice</div>
+      <label class="fld"><span>Nom</span><input id="tex-nom" placeholder="Squat gobelet"></label>
+      <div class="r2">
+        <label class="fld"><span>Séries</span><input id="tex-series" inputmode="numeric" placeholder="3"></label>
+        <label class="fld"><span>Répétitions</span><input id="tex-reps" placeholder="8-10"></label>
+      </div>
+      <div class="r2">
+        <label class="fld"><span>Charge</span><input id="tex-charge" placeholder="40 kg"></label>
+        <label class="fld"><span>Repos</span><input id="tex-repos" placeholder="90 s"></label>
+      </div>
+      <div class="r2">
+        <label class="fld"><span>Jour</span><select id="tex-bloc"><option value="">—</option>${JOURS2.map(j=>`<option>${j}</option>`).join("")}</select></label>
+        <label class="fld"><span>RIR cible</span><select id="tex-rir"><option value="">—</option><option>0-1</option><option>1-2</option><option>2-3</option><option>3-4</option></select></label>
+      </div>
+      <label class="fld"><span>Consigne (optionnel)</span><input id="tex-note" placeholder="Amplitude contrôlée…"></label>
+      <label class="fld"><span>Équivalence si trop difficile (optionnel)</span><input id="tex-alt" placeholder="Presse à cuisses"></label>
+      <button class="btn g full" data-act="tpl-add-ex">+ Ajouter l'exercice</button>
+    </div>
+    <button class="btn p full" data-act="tpl-editor-save">💾 Enregistrer le programme</button>`;
+}
+function programmesView(){
+  if(S.tplEdit) return tplEditor();
+  const tps=S.templates||[];
+  const cards=tps.map(t=>{
+    const prog=t.program||[];
+    const jours=[...new Set(prog.map(e=>e.bloc).filter(Boolean))];
+    return `<div class="panel" style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:800;font-size:16px;color:var(--white)">${esc(t.nom)}</div>
+          <div class="md" style="margin-left:0">${prog.length} exercice${prog.length>1?"s":""}${jours.length?` · ${jours.join(", ")}`:""}</div>
+        </div>
+        <button class="x" data-act="tpl-del2" data-id="${t.id}" title="Supprimer">×</button>
+      </div>
+      ${S.clients.length?`<div class="r2" style="align-items:flex-end;margin-top:10px">
+        <label class="fld" style="flex:2;margin-bottom:0"><span>Envoyer à</span><select id="tpl-target-${t.id}">${S.clients.map(c2=>`<option value="${c2.id}">${esc(c2.nom)}</option>`).join("")}</select></label>
+        <button class="btn p" data-act="tpl-send" data-id="${t.id}" style="flex:1">Envoyer</button>
+      </div>`:""}
+      <div style="display:flex;gap:14px;margin-top:10px">
+        <button class="link" style="font-size:13px" data-act="tpl-edit" data-id="${t.id}">✏️ Modifier</button>
+        <button class="link" style="font-size:13px" data-act="tpl-pdf" data-id="${t.id}">🖨 PDF</button>
+      </div>
+    </div>`;
+  }).join("");
+  return `
+    <div class="sec-head"><h2>Mes programmes</h2><button class="link" data-act="tpl-new">+ Nouveau</button></div>
+    ${tps.length?cards:`<div class="panel" style="text-align:center;padding:26px 18px">
+      <div style="font-size:38px;margin-bottom:8px">▤</div>
+      <p style="font-size:15px;color:var(--white);font-weight:700;margin-bottom:4px">Votre bibliothèque de programmes</p>
+      <p class="muted" style="font-size:13px">Créez vos programmes types une seule fois, puis envoyez-les à n'importe quel client en deux appuis.</p>
+    </div>`}`;
+}
+function programPrintHTML(t){
+  const prog=t.program||[];
+  const JOURS2=["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"];
+  const rank=b=>{if(!b)return 100;const j=JOURS2.indexOf(b);return j>=0?j:50;};
+  const blocs={};
+  prog.forEach(e=>{const b2=e.bloc||"";(blocs[b2]=blocs[b2]||[]).push(e);});
+  const keys=Object.keys(blocs).sort((a,b2)=>rank(a)-rank(b2));
+  const sections=keys.map(b2=>`
+    <h3 style="color:#B01F1F;font-size:15px;margin:18px 0 6px">${b2?(b2.length<=2?"Séance "+b2:b2):"Exercices"}</h3>
+    <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <tr style="background:#B01F1F;color:#fff"><th style="padding:6px 9px;text-align:left">Exercice</th><th style="padding:6px 9px">Séries</th><th style="padding:6px 9px">Reps</th><th style="padding:6px 9px">Charge</th><th style="padding:6px 9px">Repos</th><th style="padding:6px 9px">RIR</th></tr>
+      ${blocs[b2].map(e=>`<tr>
+        <td style="padding:6px 9px;border-bottom:1px solid #ddd"><b>${esc(e.nom)}</b>${e.note?`<div style="color:#777;font-size:11.5px">${esc(e.note)}</div>`:""}${e.alt?`<div style="color:#B8862F;font-size:11.5px">↔ ${esc(e.alt)}</div>`:""}</td>
+        <td style="padding:6px 9px;border-bottom:1px solid #ddd;text-align:center">${e.series}</td>
+        <td style="padding:6px 9px;border-bottom:1px solid #ddd;text-align:center">${esc(e.reps||"—")}</td>
+        <td style="padding:6px 9px;border-bottom:1px solid #ddd;text-align:center">${esc(e.charge||"—")}</td>
+        <td style="padding:6px 9px;border-bottom:1px solid #ddd;text-align:center">${esc(e.repos||"—")}</td>
+        <td style="padding:6px 9px;border-bottom:1px solid #ddd;text-align:center">${esc(e.rir||"—")}</td>
+      </tr>`).join("")}
+    </table>`).join("");
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(t.nom)}</title></head>
+  <body style="font-family:Arial,sans-serif;color:#222;max-width:680px;margin:24px auto;padding:0 16px">
+    <div style="display:flex;align-items:center;gap:14px;border-bottom:3px solid #B01F1F;padding-bottom:14px;margin-bottom:14px">
+      <img src="${LOGO}" style="width:70px">
+      <div><div style="font-size:21px;font-weight:800;letter-spacing:.04em">ALEX COACHING</div>
+      <div style="color:#777;font-size:13px">Programme d'entraînement</div></div>
+    </div>
+    <h2 style="font-size:19px;margin:0">${esc(t.nom)}</h2>
+    ${sections||"<p>Aucun exercice.</p>"}
+    <p style="margin-top:26px;font-size:11px;color:#999;text-align:center">Alex Coaching — Change ton corps. Transforme ta vie.</p>
+  </body></html>`;
+}
+function printProgram(t){
+  const w=window.open("","_blank");
+  if(!w){ alert("Autorisez les pop-ups pour générer le PDF."); return; }
+  w.document.write(programPrintHTML(t));
+  w.document.close();
+  setTimeout(()=>{ try{w.print();}catch(e){} },400);
+}
+
 /* ===== BILAN ===== */
 /* génère le HTML imprimable du bilan */
 function bilanPrintHTML(c){
@@ -1690,16 +1816,20 @@ async function inviteClient(){
   alert(msg);
 }
 
+function baseRow(c){
+  // Colonnes présentes depuis l'origine — insertion toujours acceptée
+  return {nom:c.nom,objectif:c.objectif||null,formule:c.formule||null,niveau:c.niveau||null,notes:c.notes||null,date_debut:c.dateDebut||null,program:c.program||[],mesures:c.mesures||[],seances:c.seances||[]};
+}
 async function createClientFromModal(){
   const nom=val("ac-nom").trim(); if(!nom) return;
   const c={nom,objectif:val("ac-obj"),formule:val("ac-formule"),niveau:val("ac-niveau"),notes:"",dateDebut:today(),program:[],mesures:[],seances:[]};
-  const {data,error}=await sb.from("clients").insert(clientToRow(c)).select().single();
+  const {data,error}=await sb.from("clients").insert(baseRow(c)).select().single();
   if(error){ alert("Création impossible : "+error.message); return; }
   const created=rowToClient(data);
   S.clients.push(created); S.selectedId=created.id; S.showAdd=false; S.view="detail"; S.detailTab="infos"; render();
 }
 async function addSample(){
-  const {data,error}=await sb.from("clients").insert(clientToRow(sampleObj())).select().single();
+  const {data,error}=await sb.from("clients").insert(baseRow(sampleObj())).select().single();
   if(error){ alert("Import impossible : "+error.message); return; }
   S.clients.push(rowToClient(data)); render();
 }
@@ -1762,6 +1892,53 @@ document.addEventListener("click",e=>{
       c.program=c.program||[]; c.program.push({id:uid(),nom,series:+val("ex-series")||3,reps:val("ex-reps"),charge:val("ex-charge"),repos:val("ex-repos"),note:val("ex-note"),alt:val("ex-alt")||"",bloc:val("ex-bloc")||"",rir:val("ex-rir")||"",historique:[]});
       save(); render(); break; }
     case "del-ex": if(c){ c.program=(c.program||[]).filter(x=>x.id!==t.dataset.id); save(); render(); } break;
+    case "tpl-new": S.tplEdit={id:null,nom:"",program:[]}; render(); break;
+    case "tpl-edit":{ const t2=S.templates.find(x=>x.id===t.dataset.id); if(!t2) break;
+      S.tplEdit={id:t2.id,nom:t2.nom,program:(t2.program||[]).map(e=>({...e}))}; render(); break; }
+    case "tpl-editor-cancel": S.tplEdit=null; render(); break;
+    case "tpl-add-ex":{ if(!S.tplEdit) break;
+      const nom=val("tex-nom").trim(); if(!nom) break;
+      S.tplEdit.program.push({id:uid(),nom,series:+val("tex-series")||3,reps:val("tex-reps"),charge:val("tex-charge"),repos:val("tex-repos"),note:val("tex-note"),alt:val("tex-alt")||"",bloc:val("tex-bloc")||"",rir:val("tex-rir")||"",historique:[]});
+      const keepNom=val("tpl-nom"); S.tplEdit.nom=keepNom;
+      render(); break; }
+    case "tpl-del-ex":{ if(!S.tplEdit) break;
+      S.tplEdit.nom=val("tpl-nom");
+      S.tplEdit.program.splice(+t.dataset.idx,1); render(); break; }
+    case "tpl-editor-save":{ if(!S.tplEdit) break;
+      const nom=(val("tpl-nom")||"").trim();
+      if(!nom){ alert("Donne un nom au programme."); break; }
+      if(!S.tplEdit.program.length){ alert("Ajoute au moins un exercice."); break; }
+      if(S.tplEdit.id){
+        sb.from("templates").update({nom,program:S.tplEdit.program}).eq("id",S.tplEdit.id).then(({error})=>{
+          if(error){ alert("Erreur : "+error.message); return; }
+          const t2=S.templates.find(x=>x.id===S.tplEdit.id);
+          if(t2){ t2.nom=nom; t2.program=S.tplEdit.program; }
+          S.tplEdit=null; toast("Programme enregistré"); render();
+        });
+      } else {
+        sb.from("templates").insert({nom,program:S.tplEdit.program}).select().single().then(({data,error})=>{
+          if(error){ alert("Erreur : "+error.message); return; }
+          if(data) S.templates.push(data);
+          S.tplEdit=null; toast("Programme créé"); render();
+        });
+      }
+      break; }
+    case "tpl-send":{ const t2=S.templates.find(x=>x.id===t.dataset.id); if(!t2) break;
+      const sel2=document.getElementById("tpl-target-"+t2.id); const target=S.clients.find(x=>x.id===(sel2&&sel2.value));
+      if(!target) break;
+      if(!confirm(`Envoyer « ${t2.nom} » à ${target.nom} ?\nSon programme actuel sera remplacé.`)) break;
+      target.program=(t2.program||[]).map(e=>({...e,id:uid(),historique:[]}));
+      sb.from("clients").update(lightRow(target)).eq("id",target.id).then(({error})=>{
+        toast(error?"Erreur d'envoi":"Programme envoyé à "+target.nom);
+      });
+      break; }
+    case "tpl-pdf":{ const t2=S.templates.find(x=>x.id===t.dataset.id); if(t2) printProgram(t2); break; }
+    case "tpl-del2":{ const t2=S.templates.find(x=>x.id===t.dataset.id); if(!t2) break;
+      if(!confirm(`Supprimer « ${t2.nom} » ?`)) break;
+      sb.from("templates").delete().eq("id",t2.id).then(({error})=>{
+        if(!error){ S.templates=S.templates.filter(x=>x.id!==t2.id); toast("Programme supprimé"); render(); }
+      });
+      break; }
     case "tpl-save":{ if(!c||!(c.program||[]).length) return;
       const nom=prompt("Nom du modèle ?","Programme "+(c.formule||""));
       if(!nom||!nom.trim()) return;
