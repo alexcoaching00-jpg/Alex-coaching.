@@ -390,7 +390,7 @@ window.supabase={
 </script>
 <script>
 "use strict";
-const APP_VERSION="v4.4 — 18/07/2026";
+const APP_VERSION="v4.5 — 18/07/2026";
 const SUPA_URL="https://xjmelkqtropownhfmuuh.supabase.co";
 const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqbWVsa3F0cm9wb3duaGZtdXVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3MDI3MTYsImV4cCI6MjA5OTI3ODcxNn0.mYoJx96xZ9SBaGky9EN8_MoTuSy7BY5D_aGB7JIFQyg";
 
@@ -906,7 +906,7 @@ function programme(c,editable){
         <button class="link" style="font-size:12px;padding:0" data-act="log-charge" data-id="${e.id}">+ Noter la charge</button>
         ${parseRepos(e.repos)?`<button class="tmr" id="tmr-${e.id}" data-act="timer" data-id="${e.id}" data-secs="${parseRepos(e.repos)}" data-label="⏱ Repos ${esc(e.repos)}" data-exo="${esc(e.nom)}">⏱ Repos ${esc(e.repos)}</button>`:""}
       </div></div>
-      ${editable?`<button class="x" data-act="del-ex" data-id="${e.id}">×</button>`:""}</div></div>`;
+      ${editable?`<span style="display:flex;gap:4px"><button class="x" style="font-size:14px" data-act="edit-ex" data-id="${e.id}" title="Modifier">✏️</button><button class="x" data-act="del-ex" data-id="${e.id}">×</button></span>`:""}</div></div>`;
   };
   // Grouper par séance (bloc)
   const blocs={};
@@ -924,20 +924,24 @@ function programme(c,editable){
       ${b?`<div class="sec-head" style="margin-top:8px"><h2 style="font-size:16px;color:var(--red)">${b.length<=2?`Séance ${b}`:b}</h2><button class="link" style="font-size:13px" data-act="start-wk" data-jour="${esc(b)}">▶ Lancer la séance</button></div>`:`<div class="sec-head" style="margin-top:8px"><h2 style="font-size:16px;color:var(--grey)">Autres exercices</h2></div>`}
       ${blocs[b].map(exCard).join("")}`).join("");
   }
+  const dEx=S.exDraft||{};
   const form=editable?`
-    <div class="panel"><div class="ph">Nouvel exercice</div>
+    <div class="panel" ${dEx.nom?'style="border-color:rgba(184,134,47,.5)"':''}><div class="ph">${dEx.nom?"✏️ Modifier l'exercice":"Nouvel exercice"}</div>
       ${exoPicker("ex-nom")}
-      <label class="fld"><span>Exercice (ou saisie libre)</span><input id="ex-nom" list="exos-fr" placeholder="Ex. Presse à cuisses"></label>
-      <div class="r2"><label class="fld"><span>Séries</span><input id="ex-series" type="number" min="1" value="3"></label>
-      <label class="fld"><span>Reps</span><input id="ex-reps" value="12"></label></div>
-      <div class="r2"><label class="fld"><span>Charge</span><input id="ex-charge" placeholder="40 kg"></label>
-      <label class="fld"><span>Repos</span><input id="ex-repos" placeholder="60 s"></label></div>
-      <div class="r2"><label class="fld"><span>Jour</span><select id="ex-bloc"><option value="">—</option>${["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche","A","B","C"].map(j=>`<option value="${j}" ${S.lastBloc===j?"selected":""}>${j.length<=2?"Séance "+j:j}</option>`).join("")}</select></label>
-      <label class="fld"><span>RIR cible</span><select id="ex-rir"><option value="">—</option><option>0-1</option><option>1-2</option><option>2-3</option><option>3-4</option></select></label></div>
-      <label class="fld"><span>Consigne (optionnel)</span><input id="ex-note" placeholder="Amplitude contrôlée…"></label>
-      <label class="fld"><span>Équivalence si trop difficile (optionnel)</span><input id="ex-alt" placeholder="Ex. Squat gobelet → Presse à cuisses"></label>
-      <label class="fld"><span>Lien vidéo (optionnel — sinon recherche YouTube auto)</span><input id="ex-video" type="url" autocapitalize="off" placeholder="https://youtube.com/…"></label>
-      <button class="btn p full" data-act="add-ex">Ajouter l'exercice</button></div>
+      <label class="fld"><span>Exercice (ou saisie libre)</span><input id="ex-nom" list="exos-fr" placeholder="Ex. Presse à cuisses" value="${esc(dEx.nom||"")}"></label>
+      <div class="r2"><label class="fld"><span>Séries</span><input id="ex-series" type="number" min="1" value="${dEx.series||3}"></label>
+      <label class="fld"><span>Reps</span><input id="ex-reps" value="${esc(dEx.reps!=null?dEx.reps:"12")}"></label></div>
+      <div class="r2"><label class="fld"><span>Charge</span><input id="ex-charge" placeholder="40 kg" value="${esc(dEx.charge||"")}"></label>
+      <label class="fld"><span>Repos</span><input id="ex-repos" placeholder="60 s" value="${esc(dEx.repos||"")}"></label></div>
+      <div class="r2"><label class="fld"><span>Jour</span><select id="ex-bloc"><option value="">—</option>${["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche","A","B","C"].map(j=>`<option value="${j}" ${(dEx.bloc||S.lastBloc)===j?"selected":""}>${j.length<=2?"Séance "+j:j}</option>`).join("")}</select></label>
+      <label class="fld"><span>RIR cible</span><select id="ex-rir"><option value="">—</option>${["0-1","1-2","2-3","3-4"].map(r2=>`<option ${dEx.rir===r2?"selected":""}>${r2}</option>`).join("")}</select></label></div>
+      <label class="fld"><span>Consigne (optionnel)</span><input id="ex-note" placeholder="Amplitude contrôlée…" value="${esc(dEx.note||"")}"></label>
+      <label class="fld"><span>Équivalence si trop difficile (optionnel)</span><input id="ex-alt" placeholder="Ex. Squat gobelet → Presse à cuisses" value="${esc(dEx.alt||"")}"></label>
+      <label class="fld"><span>Lien vidéo (optionnel — sinon recherche YouTube auto)</span><input id="ex-video" type="url" autocapitalize="off" placeholder="https://youtube.com/…" value="${esc(dEx.video||"")}"></label>
+      <div style="display:flex;gap:10px">
+        <button class="btn p full" data-act="add-ex">${dEx.nom?"✔ Valider la modification":"Ajouter l'exercice"}</button>
+        ${dEx.nom?`<button class="btn g" style="flex:0 0 auto;padding:0 18px" data-act="edit-ex-cancel">Annuler</button>`:""}
+      </div></div>
     <div class="panel" style="margin-top:12px">
       <div class="ph" style="font-size:14px">Mes modèles de programmes</div>
       ${S.templates.length?`<div class="r2" style="align-items:flex-end;margin-bottom:8px">
@@ -2168,9 +2172,26 @@ document.addEventListener("click",e=>{
     case "add-ex":{ if(!c) return; const nom=val("ex-nom").trim(); if(!nom) return;
       const bloc=val("ex-bloc")||"";
       S.lastBloc=bloc;
-      c.program=c.program||[]; c.program.push({id:uid(),nom,series:+val("ex-series")||3,reps:val("ex-reps"),charge:val("ex-charge"),repos:val("ex-repos"),note:val("ex-note"),alt:val("ex-alt")||"",bloc,rir:val("ex-rir")||"",video:(val("ex-video")||"").trim(),historique:[]});
+      c.program=c.program||[];
+      const draft=S.exDraft;
+      const payload={nom,series:+val("ex-series")||3,reps:val("ex-reps"),charge:val("ex-charge"),repos:val("ex-repos"),note:val("ex-note"),alt:val("ex-alt")||"",bloc,rir:val("ex-rir")||"",video:(val("ex-video")||"").trim()};
+      if(draft&&draft.id){
+        const idx=c.program.findIndex(x=>x.id===draft.id);
+        if(idx>=0) c.program[idx]={...c.program[idx],...payload};
+        else c.program.push({id:uid(),...payload,historique:[]});
+      } else {
+        c.program.push({id:uid(),...payload,historique:[]});
+      }
+      S.exDraft=null;
       save(); render(); break; }
-    case "del-ex": if(c){ c.program=(c.program||[]).filter(x=>x.id!==t.dataset.id); save(); render(); } break;
+    case "edit-ex":{ if(!c) return;
+      const ex2=(c.program||[]).find(x=>x.id===t.dataset.id); if(!ex2) break;
+      S.exDraft={...ex2};
+      render();
+      const f4=document.getElementById("ex-nom"); if(f4){ f4.scrollIntoView({behavior:"smooth",block:"center"}); f4.focus(); }
+      break; }
+    case "edit-ex-cancel": S.exDraft=null; render(); break;
+    case "del-ex": if(c){ c.program=(c.program||[]).filter(x=>x.id!==t.dataset.id); if(S.exDraft&&S.exDraft.id===t.dataset.id) S.exDraft=null; save(); render(); } break;
     case "tpl-new": S.tplEdit={id:null,nom:"",program:[]}; render(); break;
     case "tpl-edit":{ const t2=S.templates.find(x=>x.id===t.dataset.id); if(!t2) break;
       S.tplEdit={id:t2.id,nom:t2.nom,program:(t2.program||[]).map(e=>({...e}))}; render(); break; }
