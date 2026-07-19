@@ -390,7 +390,7 @@ window.supabase={
 </script>
 <script>
 "use strict";
-const APP_VERSION="v4.5 — 18/07/2026";
+const APP_VERSION="v4.6 — 19/07/2026";
 const SUPA_URL="https://xjmelkqtropownhfmuuh.supabase.co";
 const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqbWVsa3F0cm9wb3duaGZtdXVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3MDI3MTYsImV4cCI6MjA5OTI3ODcxNn0.mYoJx96xZ9SBaGky9EN8_MoTuSy7BY5D_aGB7JIFQyg";
 
@@ -1847,8 +1847,14 @@ function programPrintHTML(t){
         <td style="padding:6px 9px;border-bottom:1px solid #ddd;text-align:center">${esc(e.rir||"—")}</td>
       </tr>`).join("")}
     </table>`).join("");
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(t.nom)}</title></head>
-  <body style="font-family:Arial,sans-serif;color:#222;max-width:680px;margin:24px auto;padding:0 16px">
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(t.nom)}</title>
+  <style>@media print{.no-print{display:none !important}}</style></head>
+  <body style="font-family:Arial,sans-serif;color:#222;max-width:680px;margin:0 auto;padding:0">
+    <div class="no-print" style="position:sticky;top:0;background:#0D0B0A;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px">
+      <a href="${esc(location.origin+location.pathname)}" style="color:#fff;text-decoration:none;font-weight:700;font-size:13.5px;border:1px solid rgba(255,255,255,.4);border-radius:8px;padding:8px 14px;white-space:nowrap">‹ Retour à l'appli</a>
+      <button onclick="window.print()" style="background:#B01F1F;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13.5px;font-weight:700">🖨 Imprimer / PDF</button>
+    </div>
+    <div style="padding:0 16px">
     <div style="display:flex;align-items:center;gap:14px;border-bottom:3px solid #B01F1F;padding-bottom:14px;margin-bottom:14px">
       <img src="${LOGO}" style="width:70px">
       <div><div style="font-size:21px;font-weight:800;letter-spacing:.04em">ALEX COACHING</div>
@@ -1857,6 +1863,7 @@ function programPrintHTML(t){
     <h2 style="font-size:19px;margin:0">${esc(t.nom)}</h2>
     ${sections||"<p>Aucun exercice.</p>"}
     <p style="margin-top:26px;font-size:11px;color:#999;text-align:center">Alex Coaching — Change ton corps. Transforme ta vie.</p>
+    </div>
   </body></html>`;
 }
 function printProgram(t){
@@ -1881,8 +1888,14 @@ function bilanPrintHTML(c){
     return `<tr><td style="padding:8px 12px;border-bottom:1px solid #ddd">${l}</td><td style="padding:8px 12px;border-bottom:1px solid #ddd;font-weight:700">${last[k]}</td><td style="padding:8px 12px;border-bottom:1px solid #ddd;color:${d.startsWith('-')?'#2E7D32':'#B8862F'}">${d}</td></tr>`;
   }).join("");
   const ms=(c.mesures||[]).filter(m=>typeof m.poids==="number");
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Bilan — ${esc(c.nom)}</title></head>
-  <body style="font-family:Arial,sans-serif;color:#222;max-width:640px;margin:24px auto;padding:0 16px">
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Bilan — ${esc(c.nom)}</title>
+  <style>@media print{.no-print{display:none !important}}</style></head>
+  <body style="font-family:Arial,sans-serif;color:#222;max-width:640px;margin:0 auto;padding:0">
+    <div class="no-print" style="position:sticky;top:0;background:#0D0B0A;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:18px">
+      <a href="${esc(location.origin+location.pathname)}" style="color:#fff;text-decoration:none;font-weight:700;font-size:13.5px;border:1px solid rgba(255,255,255,.4);border-radius:8px;padding:8px 14px;white-space:nowrap">‹ Retour à l'appli</a>
+      <button onclick="window.print()" style="background:#B01F1F;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13.5px;font-weight:700">🖨 Imprimer / PDF</button>
+    </div>
+    <div style="padding:0 16px">
     <div style="display:flex;align-items:center;gap:14px;border-bottom:3px solid #B01F1F;padding-bottom:14px;margin-bottom:18px">
       <img src="${LOGO}" style="width:74px">
       <div><div style="font-size:22px;font-weight:800;letter-spacing:.04em">ALEX COACHING</div>
@@ -1904,6 +1917,7 @@ function bilanPrintHTML(c){
       </div>`;})()}
     ${ms.length>=2?`<div style="margin-top:18px">${chart(ms,c.objectifPoids||undefined)}</div>`:""}
     <p style="margin-top:26px;font-size:11px;color:#999;text-align:center">Alex Coaching — Change ton corps. Transforme ta vie.</p>
+    </div>
   </body></html>`;
 }
 function printBilan(c){
