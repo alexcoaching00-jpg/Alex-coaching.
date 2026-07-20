@@ -170,6 +170,8 @@
   .pstat.delta .pv{color:#4CAF50}.pstat.delta.up .pv{color:var(--amber)}
   .pstat.target .pv{color:var(--red)}
   .tmr{background:var(--ink2);border:1px solid #4A3B32;color:var(--amber);border-radius:999px;padding:4px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter'}
+  .chip{background:var(--ink2);border:1px solid var(--line);color:var(--grey);border-radius:999px;padding:6px 14px;font-size:12.5px;font-weight:700;cursor:pointer}
+  .chip.on{background:var(--red);border-color:var(--red);color:#fff}
   .tmr.run{background:var(--red);border-color:var(--red);color:#fff;animation:tpulse 1s ease-in-out infinite}
   @keyframes tpulse{0%,100%{opacity:1}50%{opacity:.75}}
   /* mode séance */
@@ -390,7 +392,7 @@ window.supabase={
 </script>
 <script>
 "use strict";
-const APP_VERSION="v4.6 — 19/07/2026";
+const APP_VERSION="v4.7 — 19/07/2026";
 const SUPA_URL="https://xjmelkqtropownhfmuuh.supabase.co";
 const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqbWVsa3F0cm9wb3duaGZtdXVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3MDI3MTYsImV4cCI6MjA5OTI3ODcxNn0.mYoJx96xZ9SBaGky9EN8_MoTuSy7BY5D_aGB7JIFQyg";
 
@@ -1720,11 +1722,29 @@ const EXOS_GROUPES=[
 ["Cardio / Fonctionnel",["Burpees","Marche du fermier","Suitcase carry","Overhead carry","Poussée de traîneau (sled)","Battle ropes","Wall balls","Thruster","Clean haltères","Snatch kettlebell","Box jump","Sprint","Rameur","Assault bike","Vélo (ergomètre)","SkiErg","Tapis de course incliné","Corde à sauter","Montées d'escaliers (stepmill)","Turkish get-up"]],
 ["Mobilité / Étirements",["Étirement ischios","Étirement quadriceps","Étirement fessiers (pigeon)","Ouverture de hanches 90/90","Mobilité épaules au bâton","Cat-cow","Chien tête en bas","Auto-massage foam roller"]]
 ];
+const EXOS_MAISON=[
+["Jambes / Fessiers",["Squat poids du corps","Squat sauté","Squat sumo poids du corps","Fentes marchées","Fentes arrières","Fentes bulgares (chaise)","Chaise contre le mur (wall sit)","Step-ups sur marche/escalier","Pont fessier","Pont fessier unilatéral","Hip thrust surélevé (canapé)","Donkey kicks","Squat pulse","Montées d'escaliers"]],
+["Pectoraux / Bras",["Pompes classiques","Pompes genoux","Pompes surélevées (canapé/chaise)","Pompes déclinées (pieds surélevés)","Pompes diamant","Pompes archer","Dips entre deux chaises","Extension triceps au sol","Curl biceps élastique","Curl biceps bouteilles d'eau"]],
+["Dos",["Superman","Extension dorsale au sol","Rowing élastique","Tirage élastique porte","Serviette isométrique (row)","Reverse snow angels"]],
+["Épaules",["Élévations latérales bouteilles d'eau","Développé militaire élastique","Pompes piquées (pike push-up)","Élévations frontales sac lesté","Rotation externe élastique"]],
+["Abdos / Gainage",["Gainage planche","Gainage latéral","Planche dynamique","Crunch classique","Crunch bicyclette","Relevés de jambes au sol","Mountain climbers","Russian twist","Dead bug","Bird dog","Hollow hold","Superman abdos","Toe touches"]],
+["Cardio / HIIT maison",["Jumping jacks","Burpees","Montées de genoux (high knees)","Talons-fesses","Squat jump","Corde à sauter","Mountain climbers rapides","Skater jumps","Shadow boxing","Montées d'escaliers rapides","Sprint sur place"]],
+["Mobilité / Étirements",["Étirement ischios debout","Étirement quadriceps","Étirement fessiers (pigeon au sol)","Ouverture de hanches 90/90","Chat-vache (cat-cow)","Chien tête en bas","Rotation du buste","Cercles de bras","Auto-massage avec bouteille"]]
+];
 function exoPicker(targetId){
-  return `<label class="fld"><span>Choisir dans la liste (${EXOS_GROUPES.reduce((t2,g)=>t2+g[1].length,0)} exercices)</span>
+  const mode=S.exoMode||"salle";
+  const groups=mode==="maison"?EXOS_MAISON:EXOS_GROUPES;
+  const count=groups.reduce((t2,g)=>t2+g[1].length,0);
+  return `<div class="exopicker" style="margin-bottom:10px">
+    <div style="display:flex;gap:6px;margin-bottom:8px">
+      <button type="button" class="chip ${mode==="salle"?"on":""}" data-act="exo-mode" data-mode="salle">🏋️ Salle</button>
+      <button type="button" class="chip ${mode==="maison"?"on":""}" data-act="exo-mode" data-mode="maison">🏠 Maison</button>
+    </div>
+    <label class="fld" style="margin-bottom:0"><span>Choisir dans la liste (<span class="exopicker-count">${count}</span> exercices)</span>
     <select data-pick="${targetId}"><option value="">— Parcourir par groupe musculaire —</option>
-    ${EXOS_GROUPES.map(([g,list])=>`<optgroup label="${g}">${list.map(e=>`<option value="${e}">${e}</option>`).join("")}</optgroup>`).join("")}
-    </select></label>`;
+    ${groups.map(([g,list])=>`<optgroup label="${g}">${list.map(e=>`<option value="${e}">${e}</option>`).join("")}</optgroup>`).join("")}
+    </select></label>
+  </div>`;
 }
 
 /* ===== BIBLIOTHÈQUE DE PROGRAMMES ===== */
@@ -1771,6 +1791,10 @@ function tplEditor(){
   return `
     <div class="sec-head"><h2>${t.id?"Modifier le programme":"Nouveau programme"}</h2><button class="link" data-act="tpl-editor-cancel">Annuler</button></div>
     <label class="fld"><span>Nom du programme</span><input id="tpl-nom" placeholder="Ex. Full body débutant — 3 séances" value="${esc(t.nom||"")}"></label>
+    <label style="display:flex;align-items:center;gap:9px;margin:-4px 0 14px;font-size:13.5px;color:var(--white2)">
+      <input type="checkbox" id="tpl-maison" ${t.maison?"checked":""} style="width:18px;height:18px;accent-color:var(--red)">
+      🏠 Programme maison (sans équipement de salle)
+    </label>
     ${t.program.length?groupsHtml:`<p class="muted" style="margin-bottom:12px">Aucun exercice — ajoutez-en ci-dessous en choisissant son jour ou sa séance (A/B/C).</p>`}
     <div class="panel" style="margin-bottom:14px"><div class="ph">Ajouter un exercice</div>
       ${exoPicker("tex-nom")}
@@ -1803,7 +1827,7 @@ function programmesView(){
     return `<div class="panel" style="margin-bottom:12px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
         <div style="flex:1;min-width:0">
-          <div style="font-weight:800;font-size:16px;color:var(--white)">${esc(t.nom)}</div>
+          <div style="font-weight:800;font-size:16px;color:var(--white)">${t.maison?`<span style="background:rgba(76,175,80,.18);color:#4CAF50;border-radius:999px;padding:2px 9px;font-size:11px;margin-right:6px;vertical-align:middle">🏠 Maison</span>`:""}${esc(t.nom)}</div>
           <div class="md" style="margin-left:0">${prog.length} exercice${prog.length>1?"s":""}${jours.length?` · ${jours.join(", ")}`:""}</div>
         </div>
         <button class="x" data-act="tpl-del2" data-id="${t.id}" title="Supprimer">×</button>
@@ -1860,7 +1884,8 @@ function programPrintHTML(t){
       <div><div style="font-size:21px;font-weight:800;letter-spacing:.04em">ALEX COACHING</div>
       <div style="color:#777;font-size:13px">Programme d'entraînement</div></div>
     </div>
-    <h2 style="font-size:19px;margin:0">${esc(t.nom)}</h2>
+    <h2 style="font-size:19px;margin:0">${esc(t.nom)} ${t.maison?'<span style="font-size:11.5px;background:#E8F5E9;color:#2E7D32;border-radius:999px;padding:3px 10px;margin-left:6px;vertical-align:middle">🏠 Programme maison</span>':""}</h2>
+    ${t.maison?'<p style="color:#888;font-size:12.5px;margin:4px 0 0">Aucun équipement de salle nécessaire — réalisable à la maison.</p>':""}
     ${sections||"<p>Aucun exercice.</p>"}
     <p style="margin-top:26px;font-size:11px;color:#999;text-align:center">Alex Coaching — Change ton corps. Transforme ta vie.</p>
     </div>
@@ -2206,9 +2231,9 @@ document.addEventListener("click",e=>{
       break; }
     case "edit-ex-cancel": S.exDraft=null; render(); break;
     case "del-ex": if(c){ c.program=(c.program||[]).filter(x=>x.id!==t.dataset.id); if(S.exDraft&&S.exDraft.id===t.dataset.id) S.exDraft=null; save(); render(); } break;
-    case "tpl-new": S.tplEdit={id:null,nom:"",program:[]}; render(); break;
+    case "tpl-new": S.tplEdit={id:null,nom:"",program:[],maison:false}; render(); break;
     case "tpl-edit":{ const t2=S.templates.find(x=>x.id===t.dataset.id); if(!t2) break;
-      S.tplEdit={id:t2.id,nom:t2.nom,program:(t2.program||[]).map(e=>({...e}))}; render(); break; }
+      S.tplEdit={id:t2.id,nom:t2.nom,program:(t2.program||[]).map(e=>({...e})),maison:!!t2.maison}; render(); break; }
     case "tpl-editor-cancel": S.tplEdit=null; render(); break;
     case "tpl-add-ex":{ if(!S.tplEdit) break;
       const nom=val("tex-nom").trim(); if(!nom) break;
@@ -2249,16 +2274,17 @@ document.addEventListener("click",e=>{
       const nom=(val("tpl-nom")||"").trim();
       if(!nom){ alert("Donne un nom au programme."); break; }
       if(!S.tplEdit.program.length){ alert("Ajoute au moins un exercice."); break; }
+      const maisonFlag=!!S.tplEdit.maison;
       if(S.tplEdit.id){
-        sb.from("templates").update({nom,program:S.tplEdit.program}).eq("id",S.tplEdit.id).then(({error})=>{
-          if(error){ alert("Erreur : "+error.message); return; }
+        sb.from("templates").update({nom,program:S.tplEdit.program,maison:maisonFlag}).eq("id",S.tplEdit.id).then(({error})=>{
+          if(error){ schemaHint(error); alert("Erreur : "+error.message); return; }
           const t2=S.templates.find(x=>x.id===S.tplEdit.id);
-          if(t2){ t2.nom=nom; t2.program=S.tplEdit.program; }
+          if(t2){ t2.nom=nom; t2.program=S.tplEdit.program; t2.maison=maisonFlag; }
           S.tplEdit=null; toast("Programme enregistré"); render();
         });
       } else {
-        sb.from("templates").insert({nom,program:S.tplEdit.program}).select().single().then(({data,error})=>{
-          if(error){ alert("Erreur : "+error.message); return; }
+        sb.from("templates").insert({nom,program:S.tplEdit.program,maison:maisonFlag}).select().single().then(({data,error})=>{
+          if(error){ schemaHint(error); alert("Erreur : "+error.message); return; }
           if(data) S.templates.push(data);
           S.tplEdit=null; toast("Programme créé"); render();
         });
@@ -2274,9 +2300,9 @@ document.addEventListener("click",e=>{
       });
       break; }
     case "tpl-clone":{ const t2=S.templates.find(x=>x.id===t.dataset.id); if(!t2) break;
-      const copy={nom:t2.nom+" (copie)",program:(t2.program||[]).map(e=>({...e,id:uid(),historique:[]}))};
+      const copy={nom:t2.nom+" (copie)",program:(t2.program||[]).map(e=>({...e,id:uid(),historique:[]})),maison:!!t2.maison};
       sb.from("templates").insert(copy).select().single().then(({data,error})=>{
-        if(error){ alert("Erreur : "+error.message); return; }
+        if(error){ schemaHint(error); alert("Erreur : "+error.message); return; }
         if(data){ S.templates.push({...copy,...data}); toast("Programme dupliqué"); render(); }
       });
       break; }
@@ -2317,6 +2343,15 @@ document.addEventListener("click",e=>{
       sb.from("clients").update(clientToRow(target)).eq("id",target.id).then(({error})=>{
         toast(error?"Erreur de copie":"Programme copié vers "+target.nom);
       });
+      break; }
+    case "exo-mode":{
+      S.exoMode=t.dataset.mode;
+      const wrap=t.closest(".exopicker"); if(!wrap) break;
+      wrap.querySelectorAll('[data-act="exo-mode"]').forEach(b=>b.classList.toggle("on",b.dataset.mode===S.exoMode));
+      const sel2=wrap.querySelector("select");
+      const groups2=S.exoMode==="maison"?EXOS_MAISON:EXOS_GROUPES;
+      if(sel2) sel2.innerHTML=`<option value="">— Parcourir par groupe musculaire —</option>`+groups2.map(([g,list])=>`<optgroup label="${g}">${list.map(e=>`<option value="${e}">${e}</option>`).join("")}</optgroup>`).join("");
+      const cnt=wrap.querySelector(".exopicker-count"); if(cnt) cnt.textContent=groups2.reduce((t2,g)=>t2+g[1].length,0);
       break; }
     case "timer": startTimer(t.dataset.id, +t.dataset.secs||60, t.dataset.exo||""); break;
     case "tmr-cancel": stopTimer(); break;
@@ -2467,6 +2502,7 @@ document.addEventListener("input",e=>{
   const c=sel(); if(!c) return; c[el.dataset.bind]=el.value; save();
 });
 document.addEventListener("change",e=>{
+  if(e.target.id==="tpl-maison"){ if(S.tplEdit) S.tplEdit.maison=e.target.checked; return; }
   const pk=e.target.closest("[data-pick]");
   if(pk){ const inp=document.getElementById(pk.dataset.pick);
     if(inp&&pk.value){ inp.value=pk.value; pk.value=""; }
@@ -2551,7 +2587,7 @@ function bootApp(){
     if(mi){ S.inviteEmail=decodeURIComponent(mi[1]); S.authView="signup";
       history.replaceState(null,"",location.pathname+location.search); }
   }catch(e){}
-  try{ const dl=document.getElementById("exos-fr"); if(dl) dl.innerHTML=EXOS_GROUPES.map(g=>g[1].map(e=>`<option value="${e}"></option>`).join("")).join(""); }catch(e){}
+  try{ const dl=document.getElementById("exos-fr"); if(dl){ const all=[...new Set([].concat(...EXOS_GROUPES.map(g=>g[1]),...EXOS_MAISON.map(g=>g[1])))]; dl.innerHTML=all.map(e=>`<option value="${e}"></option>`).join(""); } }catch(e){}
   const spImg=document.getElementById('splash-img'); if(spImg) spImg.src=LOGO;
   sb = window.supabase.createClient(SUPA_URL, SUPA_KEY);
   render();
